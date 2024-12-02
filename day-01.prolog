@@ -63,7 +63,6 @@ run(Input) :-
     reduce_sum(Distances, TotalDistance),
     writeln(TotalDistance).
 
-% To use the example input,
 run() :-
     input(Input),
     run(Input).
