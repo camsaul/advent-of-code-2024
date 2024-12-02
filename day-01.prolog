@@ -54,14 +54,6 @@ read_file_to_string(Path, String) :-
     read_string(Stream, _, String),
     close(Stream).
 
-% input(
-% "3   4
-% 4   3
-% 2   5
-% 1   3
-% 3   9
-% 3   3").
-
 run(Input) :-
     parse_input(Input, List1, List2),
     distances(List1, List2, Distances),
@@ -69,6 +61,5 @@ run(Input) :-
     writeln(TotalDistance).
 
 run() :-
-    % input(Input),
     read_file_to_string("day-01.txt", Input),
     run(Input).
