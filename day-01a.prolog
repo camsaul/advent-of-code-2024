@@ -2,7 +2,7 @@
 %
 %     $ swipl
 %
-%     ?- consult('day-01.prolog'), run.
+%     ?- consult('day-01a.prolog'), run.
 %     11
 %     true.
 %
