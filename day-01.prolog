@@ -49,13 +49,18 @@ reduce_sum([X, Y | More], N) :-
     reduce_sum(More, SumMore),
     N is SumXY + SumMore.
 
-input(
-"3   4
-4   3
-2   5
-1   3
-3   9
-3   3").
+read_file_to_string(Path, String) :-
+    open(Path, read, Stream),
+    read_string(Stream, _, String),
+    close(Stream).
+
+% input(
+% "3   4
+% 4   3
+% 2   5
+% 1   3
+% 3   9
+% 3   3").
 
 run(Input) :-
     parse_input(Input, List1, List2),
@@ -64,5 +69,6 @@ run(Input) :-
     writeln(TotalDistance).
 
 run() :-
-    input(Input),
+    % input(Input),
+    read_file_to_string("day-01.txt", Input),
     run(Input).
