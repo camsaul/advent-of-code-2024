@@ -34,9 +34,6 @@ parse_input(Input, Reports) :-
 %!  levels_are_consecutive(Report) is det.
 %
 %   Whether the levels in Report are either all increasing or all decreasing.
-%!  levels_are_consecutive(Report) is det.
-%
-%   Whether the levels in Report are either all increasing or all decreasing.
 levels_are_consecutive([], _Increasing) :-
     true.
 
@@ -73,14 +70,53 @@ report_is_safe(Report) :-
     levels_are_consecutive(Report),
     level_changes_are_safe(Report).
 
+%! remove_index(List, IndexToRemove, NewList) is det.
+
+remove_index(List, IndexToRemove, NewList) :-
+    remove_index(List, 0, IndexToRemove, NewList).
+
+remove_index([], _Index, _IndexToRemove, []) :-
+    true.
+
+remove_index([_H | T], IndexToRemove, IndexToRemove, T) :-
+    true.
+
+remove_index([H | OldT], Index, IndexToRemove, [H | NewT]) :-
+    NextIndex is Index + 1,
+    remove_index(OldT, NextIndex, IndexToRemove, NewT).
+
+report_is_safe_with_level_removed(Report, -1) :-
+    report_is_safe(Report).
+
+report_is_safe_with_level_removed(Report, IndexToRemove) :-
+    remove_index(Report, IndexToRemove, UpdatedReport),
+    report_is_safe(UpdatedReport).
+
+report_is_safe_with_any_level_removed(Report, IndexToRemove, Length) :-
+    report_is_safe_with_level_removed(Report, IndexToRemove);
+    (
+        NextIndex is IndexToRemove + 1,
+        NextIndex < Length,
+        report_is_safe_with_any_level_removed(Report, NextIndex, Length)
+    ).
+
+report_is_safe_with_any_level_removed(Report) :-
+    length(Report, Length),
+    report_is_safe_with_any_level_removed(Report, -1, Length).
+
 %! num_safe_reports(Reports, NumSafeReports) is det.
 num_safe_reports([], 0) :-
     true.
 
 num_safe_reports([Report | MoreReports], NumSafe) :-
     num_safe_reports(MoreReports, MoreNumSafe),
-    ((report_is_safe(Report), NumSafe is MoreNumSafe + 1);
-     NumSafe is MoreNumSafe).
+    (
+        (
+            report_is_safe_with_any_level_removed(Report),
+            NumSafe is MoreNumSafe + 1
+        );
+        NumSafe = MoreNumSafe
+    ).
 
 run(Input) :-
     parse_input(Input, Reports),
