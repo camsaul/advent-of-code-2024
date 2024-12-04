@@ -9,9 +9,8 @@ $ swipl
 ```
 
 ```prolog
-?- consult('day-01a.prolog'), run.
-11
-true.
+?- consult('day-03b.prolog'), run(Result).
+Result = 71668682.
 ```
 
 For development I used Emacs with [Sweep](https://eshelyaron.com/sweep.html) which has nice REPL functionality.
