@@ -42,17 +42,18 @@ solution(Board, BoardSize, Point) :-
     point(BoardSize, Point),
     solution_at_point(Board, Point).
 
+total_num_solutions(Board, BoardSize, NumSolutions) :-
+    findall([Point], solution(Board, BoardSize, Point), Solutions)
+->  length(Solutions, NumSolutions)
+;   NumSolutions #= 0.
+
 board(Board, NumSolutions) :-
     board_of_size(Board, BoardSize),
     board(Board, BoardSize, NumSolutions).
 
 board(Board, BoardSize, NumSolutions) :-
     board_of_size(Board, BoardSize),
-    (
-        findall([Point], solution(Board, BoardSize, Point), Solutions)
-    ;   NumSolutions #= 0
-    ),
-    length(Solutions, NumSolutions).
+    total_num_solutions(Board, BoardSize, NumSolutions).
 
 read_lines_to_chars(Stream, []) :- at_end_of_stream(Stream).
 
@@ -67,7 +68,7 @@ read_file_lines_to_chars(Path, Lines) :-
     read_lines_to_chars(Stream, Lines),
     close(Stream).
 
-run(NumSolutions) :- read_file_lines_to_chars("day-04.txt", Board), board(Board, NumSolutions).
+run(NumSolutions) :- read_file_lines_to_chars("day-04.txt", Board), !, board(Board, NumSolutions).
 
 partition_on_newlines([], []).
 
