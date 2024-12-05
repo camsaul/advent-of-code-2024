@@ -156,8 +156,7 @@ board(Board, BoardSize, NumSolutions) :-
     % any new solutions when filling in the board.
     solved_word_combination(WordSolvedPairs , NumSolutions).
 
-write_board(Board) :-
-    maplist([Row]>>(string_codes(S, Row), writeln(S)), Board).
+write_board(Board) :- maplist([Row]>>(string_codes(S, Row), writeln(S)), Board).
 
 parse_input([], []).
 
