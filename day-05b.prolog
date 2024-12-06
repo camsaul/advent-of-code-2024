@@ -72,15 +72,12 @@ partition_lines([Line | More], rules, Rules, Lists) :-
     (
         LineLength #= 0
     ->  partition_lines(More, lists, Rules, Lists)
-    ;   (
-            Rules = [Line | MoreRules],
-            partition_lines(More, rules, MoreRules, Lists)
-        )
+    ;   Rules = [Line | MoreRules],
+        partition_lines(More, rules, MoreRules, Lists)
     ).
 
 partition_lines([Line | More], lists, Rules, [Line | MoreLists]) :-
     partition_lines(More, lists, Rules, MoreLists).
-
 
 parse_rule(String, LHS-RHS) :-
     re_matchsub("(\\d+)\\|(\\d+)", String, Match),
