@@ -27,7 +27,6 @@ sorted_list([X, Y | More]) :-
     rbefore(X, Y),
     % Make sure there are no items in More that should be sorted before X.
     correct_first_element([X | More]),
-    % Now recursively make sure the rest of the list is sorted.
     sorted_list([Y | More]).
 
 sorted_lists(Lists, SortedLists) :-
