@@ -1,8 +1,7 @@
-s:- use_module(library(clpfd)).
+:- use_module(library(clpfd)).
 
 :- use_module(util, [read_file_lines_to_chars/2]).
 :- use_module(library(apply), [maplist/2]).
-:- use_module(library(lists), [nth0/3, same_length/2, append/3]).
 :- use_module(library(yall)).
 :- use_module(library(aggregate), [aggregate_all/3]).
 
