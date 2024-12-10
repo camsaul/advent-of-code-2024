@@ -10,6 +10,12 @@ equation(Result, [Result], []).
 equation(Result, [X, Y], [add]) :- Result #= X + Y.
 equation(Result, [X, Y], [multiply]) :- Result #= X * Y.
 
+equation(Result, [X, Y], [concat]) :-
+    number_string(X, XStr),
+    number_string(Y, YStr),
+    string_concat(XStr, YStr, ResultStr),
+    number_string(Result, ResultStr).
+
 equation(Result, [X, Y, Z | More], [XYOperator | MoreOperators]) :-
     equation(XYResult, [X, Y], [XYOperator]),
     equation(Result, [XYResult, Z | More], MoreOperators).
