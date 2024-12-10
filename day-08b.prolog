@@ -10,10 +10,10 @@
 %
 % 1. Find all the distinct pairs of antennas of the same type
 %
-% 2. For each pair of antennas calculate the line (as a set of all points within the boundaries of the board ) that
+% 2. For each pair of antennas calculate the line (as a set of all points within the boundaries of the board) that
 %    includes both antennas
 %
-% 3. reduce the lines into a single set by unironing them together
+% 3. reduce the lines into a single set by unioning them together
 %
 % I think the trickiest part about this was calculating the line, if you have two points 6-6 and 8-8 then that line
 % should include 7-7 so you can't just take the diff between the two points and step by that, 0-0, 2-2, 4-4, 6-6, 8-8 is
