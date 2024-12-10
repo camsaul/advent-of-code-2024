@@ -32,3 +32,6 @@ replace_nth(Index, List, Element, NewList) :-
     append(Before, [_ | After], List),
     append(Before, [Element | After], NewList).
 ```
+
+`day-06a-alternate.prolog` is a version of the solution for day 6 part 1 that uses sets instead of storing the visited
+and blocked cells in the global database.
