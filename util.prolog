@@ -3,10 +3,13 @@
                  read_file_lines_to_codes/4,
                  read_file_lines_to_chars/2,
                  read_file_lines_to_chars/4,
-                 replace_nth/4]).
+                 replace_nth/4,
+                 indexed/2,
+                 first_index/3,
+                 last_index/3]).
 
+:- use_module(library(lists), [same_length/2, append/3, reverse/2]).
 :- use_module(library(readutil), [read_line_to_string/2, read_line_to_codes/2]).
-:- use_module(library(lists), [same_length/2, append/3]).
 
 read_stream_lines_to_strings(Stream, []) :- at_end_of_stream(Stream), !.
 
@@ -89,3 +92,43 @@ replace_nth(Index, List, Element, NewList) :-
     length(Before, Index),
     append(Before, [_ | After], List),
     append(Before, [Element | After], NewList).
+
+indexed([], _I, []).
+indexed([X | More], I, [I-X | MoreIndexed]) :- NextI #= I + 1, indexed(More, NextI, MoreIndexed).
+
+indexed(List, Out) :- indexed(List, 0, Out).
+
+%!  first_index(List, Pred, I) is undefined.
+%
+%   You can use CLP(FD) constraints on I to skip values from consideration as an optimization.
+first_index([H|T], Pred, I) :-
+    (
+        I #= 0,
+        call(Pred, H)
+    )
+->  true
+;   I #= NextI + 1,
+    first_index(T, Pred, NextI).
+
+% first_index([a, a, b, c, b, c, d, b, e], [X]>>(X = 'b'), I).
+% I = 2
+% I #> 2, first_index([a, a, b, c, b, c, d, b, e], [X]>>(X = 'b'), I).
+% I = 4
+
+%!  last_index(List, Pred, I) is undefined.
+%
+%   You can use CLP(FD) constraints on I to skip values from consideration as an optimization.
+last_index([H|T], Pred, I) :-
+    (
+        I #= NextI + 1,
+        last_index(T, Pred, NextI)
+    )
+->  true
+;   I #= 0,
+    call(Pred, H).
+
+% last_index([a, a, b, c, b, c, d, b, e], [X]>>(X = 'b'), I).
+% I = 7
+%
+% I #< 7, last_index([a, a, b, c, b, c, d, b, e], [X]>>(X = 'b'), I).
+% I = 4
