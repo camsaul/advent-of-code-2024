@@ -6,6 +6,20 @@
 
 :- use_module(util, [read_file_lines_to_chars/4]).
 
+% Basic idea is
+%
+% 1. Find all the distinct pairs of antennas of the same type
+%
+% 2. For each pair of antennas calculate the line (as a set of all points within the boundaries of the board ) that
+%    includes both antennas
+%
+% 3. reduce the lines into a single set by unironing them together
+%
+% I think the trickiest part about this was calculating the line, if you have two points 6-6 and 8-8 then that line
+% should include 7-7 so you can't just take the diff between the two points and step by that, 0-0, 2-2, 4-4, 6-6, 8-8 is
+% wrong; 0-0, 1-1, 2-2,... is the correct line. So I had to calculate the greatest common denominator to simplify the
+% rise/run slope fraction.
+
 % Positions are tuples like RowNum-ColNum.
 % Size is a tuple like NumRows-NumCols.
 % Antenna is a tuple like Position-AntennaType aka RowNum-ColNum-AntennaType.
