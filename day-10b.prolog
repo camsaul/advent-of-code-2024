@@ -1,7 +1,6 @@
 :- use_module(library(apply), [foldl/4]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/3]).
-:- use_module(library(solution_sequences), [distinct/1]).
 
 :- use_module(util, [read_file_lines_to_chars/2, indexed/2]).
 
@@ -63,14 +62,11 @@ trail_ending_at(Size, Board, Position, Height, Trail) :-
     trail_ending_at(Size, Board, NextPosition, NextHeight, NextTrail),
     append(NextTrail, [Position], Trail).
 
-trail_between_points(Size, Board, StartPosition, EndPosition) :-
-    trail_ending_at(Size, Board, EndPosition, 9, [StartPosition|_]).
-
 trail(Size, Board, [StartPosition, EndPosition]) :-
     position(Size, EndPosition),
-    trail_between_points(Size, Board, StartPosition, EndPosition).
+    trail_ending_at(Size, Board, EndPosition, 9, [StartPosition|_]).
 
-trailheads(Size, Board, Trailheads) :- findall(Trailhead, distinct(trail(Size, Board, Trailhead)), Trailheads).
+trailheads(Size, Board, Trailheads) :- findall(Trailhead, trail(Size, Board, Trailhead), Trailheads).
 
 % solve(example, N).
 % solve(actual, N).
