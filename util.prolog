@@ -8,7 +8,8 @@
                  first_index/3,
                  last_index/3]).
 
-:- use_module(library(lists), [same_length/2, append/3, reverse/2]).
+:- use_module(library(clpfd)).
+:- use_module(library(lists), [same_length/2, append/3]).
 :- use_module(library(readutil), [read_line_to_string/2, read_line_to_codes/2]).
 
 read_stream_lines_to_strings(Stream, []) :- at_end_of_stream(Stream), !.

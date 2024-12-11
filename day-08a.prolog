@@ -1,8 +1,8 @@
-:- use_module(library(clpfd)).
-
 :- use_module(library(apply), [include/3]).
+:- use_module(library(clpfd)).
 :- use_module(library(lists), [member/2]).
 :- use_module(library(yall), [(>>)/3]).
+
 :- use_module(util, [read_file_lines_to_codes/4]).
 
 :- set_prolog_flag(answer_write_options,[max_depth(15)]).
