@@ -1,6 +1,6 @@
 :- use_module(library(apply), [foldl/4]).
 :- use_module(library(clpfd)).
-:- use_module(library(lists), [append/3]).
+:- use_module(library(lists), []).
 :- use_module(library(solution_sequences), [distinct/1]).
 
 :- use_module(util, [read_file_lines_to_chars/2, indexed/2]).
@@ -55,16 +55,16 @@ cell_height(Board, Row-Col, Value) :- Value = ((Board.Row).Col).height.
 
 trail_ending_at(_Size, Board, Position, 0, [Position]) :- cell_height(Board, Position, 0).
 
-trail_ending_at(Size, Board, Position, Height, Trail) :-
+trail_ending_at(Size, Board, Position, Height, [Position|NextTrail]) :-
     Height #> 0,
     cell_height(Board, Position, Height),
     next_position(Size, Position, NextPosition),
     NextHeight #= Height - 1,
-    trail_ending_at(Size, Board, NextPosition, NextHeight, NextTrail),
-    append(NextTrail, [Position], Trail).
+    trail_ending_at(Size, Board, NextPosition, NextHeight, NextTrail).
 
 trail_between_points(Size, Board, StartPosition, EndPosition) :-
-    trail_ending_at(Size, Board, EndPosition, 9, [StartPosition|_]).
+    trail_ending_at(Size, Board, EndPosition, 9, Trail),
+    lists:last(Trail, StartPosition).
 
 trail(Size, Board, [StartPosition, EndPosition]) :-
     position(Size, EndPosition),
