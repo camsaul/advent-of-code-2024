@@ -7,18 +7,14 @@
 
 :- set_prolog_flag(answer_write_options,[max_depth(0)]).
 
-init_cell(ColNum-Char, Acc0, Acc1) :-
-    number_string(Height, [Char]),
-    put_dict(ColNum, Acc0, _{height: Height}, Acc1).
+init_cell(ColNum-Char, Acc0, Acc1) :- number_string(Height, [Char]), put_dict(ColNum, Acc0, Height, Acc1).
 
 init_row(RowNum-Row, Acc0, Acc1) :-
     indexed(Row, IndexedRow),
     foldl(init_cell, IndexedRow, _{}, RowDict),
     put_dict(RowNum, Acc0, RowDict, Acc1).
 
-init_rows(Rows, Out) :-
-    indexed(Rows, IndexedRows),
-    foldl(init_row, IndexedRows, _{}, Out).
+init_rows(Rows, Out) :- indexed(Rows, IndexedRows), foldl(init_row, IndexedRows, _{}, Out).
 
 path(example, 'day-10-example.txt').
 path(actual, 'day-10.txt').
@@ -51,7 +47,7 @@ next_position(Size, Row-Col, NextRow-Col) :-
     ),
     position(Size, NextRow-Col).
 
-cell_height(Board, Row-Col, Value) :- Value = ((Board.Row).Col).height.
+cell_height(Board, Row-Col, Value) :- Value = (Board.Row).Col.
 
 trail_ending_at(_Size, Board, Position, 0, [Position]) :- cell_height(Board, Position, 0).
 
@@ -70,8 +66,9 @@ trail(Size, Board, [StartPosition, EndPosition]) :-
     position(Size, EndPosition),
     trail_between_points(Size, Board, StartPosition, EndPosition).
 
-trailheads(Size, Board, Trailheads) :- findall(Trailhead, distinct(trail(Size, Board, Trailhead)), Trailheads).
-
 % solve(example, N).
 % solve(actual, N).
-solve(Source, N) :- init(Source, Size, Board), trailheads(Size, Board, Trailheads), length(Trailheads, N).
+solve(Source, N) :-
+    init(Source, Size, Board),
+    findall(Trail, distinct(trail(Size, Board, Trail)), Trails),
+    length(Trails, N).
