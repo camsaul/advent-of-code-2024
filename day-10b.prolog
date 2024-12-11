@@ -27,23 +27,27 @@ init(Source, Size, Out) :-
     format("Size = ~w~n", [Size]),
     init_rows(Rows, Out).
 
-position(NumRows-NumCols, Row-Col) :- Row #>= 0, Row #< NumRows, Col #>= 0, Col #< NumCols.
-
 % left or right
-next_position(Size, Row-Col, Row-NextCol) :-
+next_position(_NumRows-NumCols, Row-Col, Row-NextCol) :-
     (
-        NextCol #= Col + 1
-    ;   NextCol #= Col - 1
-    ),
-    position(Size, Row-NextCol).
+        NextCol #= Col + 1,
+        NextCol #< NumCols
+    )
+;   (
+        NextCol #= Col - 1,
+        NextCol #>= 0
+    ).
 
 % up or down
-next_position(Size, Row-Col, NextRow-Col) :-
+next_position(NumRows-_NumCols, Row-Col, NextRow-Col) :-
     (
-        NextRow #= Row + 1
-    ;   NextRow #= Row - 1
-    ),
-    position(Size, NextRow-Col).
+        NextRow #= Row + 1,
+        NextRow #< NumRows
+    )
+;   (
+        NextRow #= Row - 1,
+        NextRow #>= 0
+    ).
 
 cell_height(Board, Row-Col, Value) :- Value = (Board.Row).Col.
 
@@ -56,7 +60,8 @@ trail_ending_at(Size, Board, Position, Height, [Position|NextTrail]) :-
     NextHeight #= Height - 1,
     trail_ending_at(Size, Board, NextPosition, NextHeight, NextTrail).
 
-trail(Size, Board, Trail) :- position(Size, EndPosition), trail_ending_at(Size, Board, EndPosition, 9, Trail).
+trail(Size, Board, Trail) :-
+    trail_ending_at(Size, Board, _EndPosition, 9, Trail).
 
 % solve(example, N).
 % solve(actual, N).
