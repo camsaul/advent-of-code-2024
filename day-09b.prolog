@@ -1,4 +1,4 @@
-:- use_module(library(apply), [maplist/3, foldl/4, include/3, maplist/2]).
+:- use_module(library(apply), [maplist/3, foldl/4, include/3]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/3, reverse/2]).
 :- use_module(library(yall)).
