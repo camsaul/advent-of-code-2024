@@ -54,17 +54,14 @@ cell_height(Board, Row-Col, Value) :- Value = ((Board.Row).Col).height.
 
 trail_ending_at(_Size, Board, Position, 0, [Position]) :- cell_height(Board, Position, 0).
 
-trail_ending_at(Size, Board, Position, Height, Trail) :-
+trail_ending_at(Size, Board, Position, Height, [Position|NextTrail]) :-
     Height #> 0,
     cell_height(Board, Position, Height),
     next_position(Size, Position, NextPosition),
     NextHeight #= Height - 1,
-    trail_ending_at(Size, Board, NextPosition, NextHeight, NextTrail),
-    append(NextTrail, [Position], Trail).
+    trail_ending_at(Size, Board, NextPosition, NextHeight, NextTrail).
 
-trail(Size, Board, [StartPosition, EndPosition]) :-
-    position(Size, EndPosition),
-    trail_ending_at(Size, Board, EndPosition, 9, [StartPosition|_]).
+trail(Size, Board, Trail) :- position(Size, EndPosition), trail_ending_at(Size, Board, EndPosition, 9, Trail).
 
 trailheads(Size, Board, Trailheads) :- findall(Trailhead, trail(Size, Board, Trailhead), Trailheads).
 
