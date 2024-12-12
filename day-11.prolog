@@ -4,17 +4,12 @@
 
 :- use_module(util, [read_file_lines_to_strings/2]).
 
-:- set_prolog_flag(double_quotes, string).
-:- set_prolog_flag(re_compile, true).
-
 num_blinks(N, N) :- number(N).
 num_blinks(part1, 25).
 num_blinks(part2, 75).
 
 path(example, 'day-11-example.txt').
 path(actual, 'day-11.txt').
-
-%! solve_stone(Stone, NumBlinks, Out) is det.
 
 :- table solve_stone/3.
 
