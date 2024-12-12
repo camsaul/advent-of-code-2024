@@ -3,6 +3,7 @@
                  read_file_lines_to_codes/4,
                  read_file_lines_to_chars/2,
                  read_file_lines_to_chars/4,
+                 read_file_lines_to_chars/5,
                  replace_nth/4,
                  indexed/2,
                  first_index/3,
@@ -10,7 +11,6 @@
                  mapcat/3]).
 
 :- use_module(library(apply), [maplist/3, foldl/4]).
-:- use_module(library(backcomp), [substring/4]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [same_length/2, append/3]).
 :- use_module(library(readutil), [read_line_to_string/2, read_line_to_codes/2]).
@@ -72,8 +72,6 @@ init_rows(Goal, [Row | More], RowNum, Out) :-
     append(Out0, Out1, Out),
     init_rows(Goal, More, NextRowNum, Out1).
 
-init_rows(Goal, Rows, Out) :- init_rows(Goal, Rows, 0, Out).
-
 read_file_lines_to_chars(Path, Size, Goal, Out) :-
     read_file_lines_to_chars(Path, Rows),
     length(Rows, NumRows),
@@ -81,7 +79,7 @@ read_file_lines_to_chars(Path, Size, Goal, Out) :-
     length(Row, NumCols),
     Size = NumRows-NumCols,
     format("Size = ~w~n", [Size]),
-    init_rows(Goal, Rows, Out).
+    init_rows(Goal, Rows, 0, Out).
 
 read_file_lines_to_codes(Path, Size, Goal, Out) :-
     read_file_lines_to_codes(Path, Rows),
@@ -90,7 +88,7 @@ read_file_lines_to_codes(Path, Size, Goal, Out) :-
     length(Row, NumCols),
     Size = NumRows-NumCols,
     format("Size = ~w~n", [Size]),
-    init_rows(Goal, Rows, Out).
+    init_rows(Goal, Rows, 0, Out).
 
 replace_nth(Index, List, Element, NewList) :-
     same_length(List, NewList),
@@ -141,3 +139,30 @@ last_index([H|T], Pred, I) :-
 mapcat(Pred, List, Out) :-
     maplist(Pred, List, Out0),
     foldl([L, Acc0, Acc1]>>append(Acc0, L, Acc1), Out0, [], Out).
+
+init_row(_Goal, [], _P, Acc, Acc).
+
+init_row(Goal, [Cell | More], RowNum-ColNum, Acc0, Out) :-
+    (
+        call(Goal, RowNum-ColNum, Cell, Acc0, Acc1)
+    ->  true
+    ;   Acc1 = Acc0
+    ),
+    NextColNum #= ColNum + 1,
+    init_row(Goal, More, RowNum-NextColNum, Acc1, Out).
+
+init_rows(_Goal, [], _RowNum, Out, Out).
+
+init_rows(Goal, [Row | More], RowNum, Acc0, Out) :-
+    init_row(Goal, Row, RowNum-0, Acc0, Acc1),
+    NextRowNum #= RowNum + 1,
+    init_rows(Goal, More, NextRowNum, Acc1, Out).
+
+read_file_lines_to_chars(Path, Size, Goal, Init, Out) :-
+    read_file_lines_to_chars(Path, Rows),
+    length(Rows, NumRows),
+    [Row|_] = Rows,
+    length(Row, NumCols),
+    Size = NumRows-NumCols,
+    format("Size = ~w~n", [Size]),
+    init_rows(Goal, Rows, 0, Init, Out).
