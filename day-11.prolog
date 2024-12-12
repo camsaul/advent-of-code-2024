@@ -40,10 +40,9 @@ solve_stone(Stone, N, Out) :-
     NextN #= N - 1,
     solve_stone(NextStone, NextN, Out).
 
-solve_stones(NumBlinks, Stones, Result) :-
-    maplist({NumBlinks}/[Stone, Out]>>solve_stone(Stone, NumBlinks, Out), Stones, Results),
-    foldl([N, Acc0, Acc1]>>(Acc1 #= Acc0 + N), Results, 0, Result),
-    !.
+reduce_stones(NumBlinks, Stone, Acc0, Acc1) :- solve_stone(Stone, NumBlinks, N), Acc1 #= Acc0 + N.
+
+solve_stones(NumBlinks, Stones, Result) :- foldl(call(reduce_stones(NumBlinks)), Stones, 0, Result), !.
 
 stones(Source, Stones) :-
     path(Source, Path),
@@ -51,6 +50,5 @@ stones(Source, Stones) :-
     split_string(Line, ' ', '', StoneStrings),
     maplist([S, N]>>number_string(N, S), StoneStrings, Stones).
 
-% solve(example, part1, N).
-% solve(actual, part2, N).
+% solve(example, part1, N) or solve(actual, part2, N).
 solve(Source, Part, N) :- stones(Source, Stones), num_blinks(Part, NumBlinks), solve_stones(NumBlinks, Stones, N), !.
