@@ -6,11 +6,15 @@
                  replace_nth/4,
                  indexed/2,
                  first_index/3,
-                 last_index/3]).
+                 last_index/3,
+                 mapcat/3]).
 
+:- use_module(library(apply), [maplist/3, foldl/4]).
+:- use_module(library(backcomp), [substring/4]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [same_length/2, append/3]).
 :- use_module(library(readutil), [read_line_to_string/2, read_line_to_codes/2]).
+:- use_module(library(yall)).
 
 read_stream_lines_to_strings(Stream, []) :- at_end_of_stream(Stream), !.
 
@@ -133,3 +137,7 @@ last_index([H|T], Pred, I) :-
 %
 % I #< 7, last_index([a, a, b, c, b, c, d, b, e], [X]>>(X = 'b'), I).
 % I = 4
+
+mapcat(Pred, List, Out) :-
+    maplist(Pred, List, Out0),
+    foldl([L, Acc0, Acc1]>>append(Acc0, L, Acc1), Out0, [], Out).
