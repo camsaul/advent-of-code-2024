@@ -87,38 +87,35 @@ edge(R-C1, R-C2, edge{dir:v, between:[C1, C2], start:R}).
 
 cell_edge(Cells, P1, Type, Edge) :- cell_edge_pos(Cells, P1, Type, P2), edge(P1, P2, Edge).
 
-edges(Cells, Type-Positions, Edges) :-
-    util:mapcat({Cells, Type}/[P1, Edges]>>findall(Edge, cell_edge(Cells, P1, Type, Edge), Edges),
-                Positions,
-                Edges).
+% plot -> edge(s)
+plot_edge(Cells, Type-Positions, Edge) :- member(Pos, Positions), cell_edge(Cells, Pos, Type, Edge).
 
-edge_groups(Edges, Groups) :-
-    findall(Group,
-            group_by([Dir, Between],
-                     Start,
-                     (member(Edge, Edges), Dir = Edge.dir, Between = Edge.between, Start = Edge.start),
-                     Group),
-            Groups).
+edge_on_same_axis(EdgesGoal, EdgeStart) :-
+    group_by([Dir, Between],
+             Start,
+             (call(EdgesGoal, Edge), Dir = Edge.dir, Between = Edge.between, Start = Edge.start),
+             EdgeStart).
 
-reduce_sections([], Acc, Acc).
-reduce_sections([Edge|More], [], Acc) :- reduce_sections(More, [[Edge]], Acc).
+reduce_sides([], Acc, Acc).
+reduce_sides([Edge|More], [], Acc) :- reduce_sides(More, [[Edge]], Acc).
 
-reduce_sections([Edge|MoreEdges], [Section|MoreSections], Acc) :-
+reduce_sides([Edge|MoreEdges], [Section|MoreSections], Acc) :-
     [LastEdge|_] = Section,
     (
         Edge #= LastEdge + 1
     ->  Acc0 = [[Edge|Section]|MoreSections]
     ;   Acc0 = [[Edge],Section|MoreSections]
     ),
-    reduce_sections(MoreEdges, Acc0, Acc).
+    reduce_sides(MoreEdges, Acc0, Acc).
 
-contiguous_sections(Edges, Sections) :- sort(Edges, Sorted), reduce_sections(Sorted, [], Sections).
+contiguous_sides(Group, Sides) :- sort(Group, Sorted), reduce_sides(Sorted, [], Sides).
 
 plot_num_sides(Cells, Plot, NumSides) :-
-    edges(Cells, Plot, Edges),
-    edge_groups(Edges, Groups),
-    util:mapcat(contiguous_sections, Groups, Sides),
-    length(Sides, NumSides).
+    aggregate_all(sum(L),
+                  (edge_on_same_axis(call(plot_edge(Cells, Plot)), Group),
+                   contiguous_sides(Group, Sides),
+                   length(Sides, L)),
+                  NumSides).
 
 plot_price(part2, Cells, Plot, Price) :-
     plot_num_sides(Cells, Plot, NumSides),
