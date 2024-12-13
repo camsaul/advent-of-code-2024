@@ -19,15 +19,12 @@ init(Path, Cells) :-
     util:read_file_lines_to_chars(Path, _Size, init_cell, Cells0, Cells).
 
 input(example, Cells) :- init('day-12-example.txt', Cells).
-input(actual, Cells) :- init('day-12.txt', Cells).
-input(Path, Cells) :- string(Path), init(Path, Cells).
+input(actual, Cells)  :- init('day-12.txt', Cells).
 
 plot(Pos, Type, Cells0, Cells, Plot0, Plot) :-
-    (
-        del_assoc(Pos, Cells0, Type, Cells1),
-        Plot1 = [Pos|Plot0]
-    )
+    del_assoc(Pos, Cells0, Type, Cells1)
 ->  % recurse with neighbor position(s)
+    Plot1 = [Pos|Plot0],
     findall(P, neighbor_pos(Pos, P, _Dir), Neighbors),
     foldl({Type}/[NeighborPos, Cells0-Plot0, Cells1-Plot1]>>plot(NeighborPos, Type, Cells0, Cells1, Plot0, Plot1),
           Neighbors, Cells1-Plot1, Cells-Plot)
@@ -69,24 +66,21 @@ plot_price(part1, Cells, Plot, Price) :-
 total_price(PriceType, Cells, Plots, Price) :-
     aggregate_all(sum(Price0), (member(Plot, Plots), plot_price(PriceType, Cells, Plot, Price0)), Price).
 
-% solve(actual, part1, Price).
 solve(Input, PriceType, Price) :- input(Input, Cells), plots(Cells, Plots), total_price(PriceType, Cells, Plots, Price), !.
 
 %
 % Part 2
 %
 
-edge(R1-C, R2-C, edge{type:horizontal, axis:[R1, R2], start:C}).
-edge(R-C1, R-C2, edge{type:vertical,   axis:[C1, C2], start:R}).
+edge(R1-C, R2-C, edge{axis:[horizontal, R1, R2], start:C}).
+edge(R-C1, R-C2, edge{axis:[vertical, C1, C2], start:R}).
 
 cell_edge(Cells, P1, Type, Edge) :- cell_edge_pos(Cells, P1, Type, P2), edge(P1, P2, Edge).
 
 plot_edge(Cells, Type-Positions, Edge) :- member(Pos, Positions), cell_edge(Cells, Pos, Type, Edge).
 
-edge_on_same_axis(EdgesGoal, EdgeStart) :-
-    group_by([Type, Axis], Start,
-             (call(EdgesGoal, Edge), Type = Edge.type, Axis = Edge.axis, Start = Edge.start),
-             EdgeStart).
+edge_on_same_axis(EdgeGoal, EdgeStart) :-
+    group_by(Axis, Start, (call(EdgeGoal, Edge), Axis = Edge.axis, Start = Edge.start), EdgeStart).
 
 reduce_sides(Edge, [], [[Edge]]).
 
