@@ -82,8 +82,8 @@ solve(Input, PriceType, Price) :- input(Input, Cells), plots(Cells, Plots), tota
 %
 %
 
-edge(R1-C, R2-C, edge{dir:h, between:[R1, R2], start:C}).
-edge(R-C1, R-C2, edge{dir:v, between:[C1, C2], start:R}).
+edge(R1-C, R2-C, edge{type:horizontal, axis:[R1, R2], start:C}).
+edge(R-C1, R-C2, edge{type:vertical,   axis:[C1, C2], start:R}).
 
 cell_edge(Cells, P1, Type, Edge) :- cell_edge_pos(Cells, P1, Type, P2), edge(P1, P2, Edge).
 
@@ -91,9 +91,8 @@ cell_edge(Cells, P1, Type, Edge) :- cell_edge_pos(Cells, P1, Type, P2), edge(P1,
 plot_edge(Cells, Type-Positions, Edge) :- member(Pos, Positions), cell_edge(Cells, Pos, Type, Edge).
 
 edge_on_same_axis(EdgesGoal, EdgeStart) :-
-    group_by([Dir, Between],
-             Start,
-             (call(EdgesGoal, Edge), Dir = Edge.dir, Between = Edge.between, Start = Edge.start),
+    group_by([Type, Axis], Start,
+             (call(EdgesGoal, Edge), Type = Edge.type, Axis = Edge.axis, Start = Edge.start),
              EdgeStart).
 
 reduce_sides([], Acc, Acc).
