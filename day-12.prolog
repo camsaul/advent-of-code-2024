@@ -98,9 +98,7 @@ reduce_sides(Edge, [Section|MoreSections], Acc1) :-
     ;   Acc1 = [[Edge],Section|MoreSections]
     ).
 
-reduce_sides(Edges, Sides) :- foldl(reduce_sides, Edges, [], Sides).
-
-contiguous_sides(Group, Sides) :- sort(Group, Sorted), reduce_sides(Sorted, Sides).
+contiguous_sides(Group, Sides) :- sort(Group, Sorted), foldl(reduce_sides, Sorted, [], Sides).
 
 plot_num_sides(Cells, Plot, NumSides) :-
     aggregate_all(sum(L),
