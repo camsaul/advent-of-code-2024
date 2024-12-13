@@ -8,7 +8,7 @@
 :- set_prolog_flag(double_quotes, string).
 :- set_prolog_flag(re_compile, true).
 
-prize(machine{a: AX-AY, b: BX-BY, prize: PrizeX-PrizeY}, NumAPresses, NumBPresses, NumTokens) :-
+prize(machine{a: AX-AY, b: BX-BY, prize: PrizeX-PrizeY}, NumTokens) :-
     NumTokens #>= 0,
     NumAPresses #>= 0,
     NumBPresses #>= 0,
@@ -54,9 +54,4 @@ parse(Input, Part, Machines) :-
 % solve(actual, part1, N)
 solve(Input, Part, N) :-
     parse(Input, Part, Machines),
-    aggregate_all(sum(NumTokens),
-                  (
-                      member(Machine, Machines),
-                      prize(Machine, _NumA, _NumB, NumTokens)
-                  ),
-                  N).
+    aggregate_all(sum(NumTokens), (member(Machine, Machines), prize(Machine, NumTokens)), N).
