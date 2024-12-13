@@ -19,7 +19,7 @@ prize(machine{a: AX-AY, b: BX-BY, prize: PrizeX-PrizeY}, NumTokens) :-
     PrizeY - (NumAPresses * AY) - (NumBPresses * BY) #= 0.
 
 parse_button(Line, X-Y) :-
-    re_matchsub("Button [A|B]: X\\+(\\d+), Y\\+(\\d+)", Line, Matches, []),
+    re_matchsub("Button [AB]: X\\+(\\d+), Y\\+(\\d+)", Line, Matches, []),
     number_string(X, Matches.1),
     number_string(Y, Matches.2).
 
