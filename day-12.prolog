@@ -7,8 +7,6 @@
 :- use_module(library(yall)).
 :- use_module(util, []).
 
-:- set_prolog_flag(answer_write_options,[max_depth(0)]).
-
 neighbor_pos(Row-Col, Row-NextCol, left)  :- NextCol #= Col - 1.
 neighbor_pos(Row-Col, Row-NextCol, right) :- NextCol #= Col + 1.
 neighbor_pos(Row-Col, NextRow-Col, up)    :- NextRow #= Row - 1.
@@ -46,8 +44,6 @@ plots(Cells0, Cells, Plots0, Plots) :-
 
 plots(Cells, Plots) :- plots(Cells, _, [], Plots).
 
-% "edge" means a neighbor position that belongs to a different plot or off the edge of the board.
-
 cell_edge_pos(Cells, Pos, Type, EdgePos) :-
     neighbor_pos(Pos, EdgePos, _Direction),
     (
@@ -77,9 +73,7 @@ total_price(PriceType, Cells, Plots, Price) :-
 solve(Input, PriceType, Price) :- input(Input, Cells), plots(Cells, Plots), total_price(PriceType, Cells, Plots, Price), !.
 
 %
-%
 % Part 2
-%
 %
 
 edge(R1-C, R2-C, edge{type:horizontal, axis:[R1, R2], start:C}).
@@ -87,7 +81,6 @@ edge(R-C1, R-C2, edge{type:vertical,   axis:[C1, C2], start:R}).
 
 cell_edge(Cells, P1, Type, Edge) :- cell_edge_pos(Cells, P1, Type, P2), edge(P1, P2, Edge).
 
-% plot -> edge(s)
 plot_edge(Cells, Type-Positions, Edge) :- member(Pos, Positions), cell_edge(Cells, Pos, Type, Edge).
 
 edge_on_same_axis(EdgesGoal, EdgeStart) :-
@@ -95,19 +88,19 @@ edge_on_same_axis(EdgesGoal, EdgeStart) :-
              (call(EdgesGoal, Edge), Type = Edge.type, Axis = Edge.axis, Start = Edge.start),
              EdgeStart).
 
-reduce_sides([], Acc, Acc).
-reduce_sides([Edge|More], [], Acc) :- reduce_sides(More, [[Edge]], Acc).
+reduce_sides(Edge, [], [[Edge]]).
 
-reduce_sides([Edge|MoreEdges], [Section|MoreSections], Acc) :-
+reduce_sides(Edge, [Section|MoreSections], Acc1) :-
     [LastEdge|_] = Section,
     (
         Edge #= LastEdge + 1
-    ->  Acc0 = [[Edge|Section]|MoreSections]
-    ;   Acc0 = [[Edge],Section|MoreSections]
-    ),
-    reduce_sides(MoreEdges, Acc0, Acc).
+    ->  Acc1 = [[Edge|Section]|MoreSections]
+    ;   Acc1 = [[Edge],Section|MoreSections]
+    ).
 
-contiguous_sides(Group, Sides) :- sort(Group, Sorted), reduce_sides(Sorted, [], Sides).
+reduce_sides(Edges, Sides) :- foldl(reduce_sides, Edges, [], Sides).
+
+contiguous_sides(Group, Sides) :- sort(Group, Sorted), reduce_sides(Sorted, Sides).
 
 plot_num_sides(Cells, Plot, NumSides) :-
     aggregate_all(sum(L),
