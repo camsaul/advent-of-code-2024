@@ -92,3 +92,95 @@ solve(Input, SafetyFactor) :-
     num_moves(NMoves),
     move_robots(Size, NMoves, Robots, MovedRobots),
     bathroom_safety_factor(Size, MovedRobots, SafetyFactor).
+
+%
+% Part 2
+%
+
+position([Width, Height], [X, Y]) :-
+    MaxX #= Width - 1,
+    X in 0..MaxX,
+    MaxY #= Height - 1,
+    Y in 0..MaxY.
+
+robot_position(robot{p:Position, v:_}, Position).
+
+print_robot(Stream, [Width, Height], Robots, [X, Y]) :-
+    position([Width, Height], [X, Y]),
+    label([Y, X]),
+    (
+        (
+            member(Robot, Robots),
+            robot_position(Robot, [X, Y])
+        )
+    ->  write(Stream, 'X')
+    ;   write(Stream, '.')
+    ),
+    (
+        X #= Width - 1
+    ->  nl(Stream)
+    ;   true
+    ).
+
+print_robots(Stream, Size, Robots) :- findall(Position, print_robot(Stream, Size, Robots, Position), _).
+
+% Calculate the mean of a list of numbers
+mean_x(Robots, Mean) :-
+    aggregate_all(sum(X), (member(robot{p: [X, _Y], v:_}, Robots)), Sum),
+    length(Robots, Length),
+    Mean is Sum / Length.
+
+mean_y(Robots, Mean) :-
+    aggregate_all(sum(Y), (member(robot{p: [_X, Y], v:_}, Robots)), Sum),
+    length(Robots, Length),
+    Mean is Sum / Length.
+
+% Helper predicate to calculate the square of the deviation from the mean
+deviation_square(Mean, Number, Square) :-
+    Square is (Number - Mean) ^ 2.
+
+% Calculate the variance of a list of numbers
+variance_x(Robots, Variance) :-
+    mean_x(Robots, Mean),
+    maplist({Mean}/[robot{p:[X, _Y], v:_}, Square]>>deviation_square(Mean, X, Square), Robots, Squares),
+    aggregate_all(sum(X), (member(X, Squares)), SumOfSquares),
+    length(Robots, Length),
+    Length > 0,
+    Variance is SumOfSquares / Length.
+
+variance_y(Robots, Variance) :-
+    mean_y(Robots, Mean),
+    maplist({Mean}/[robot{p:[_X, Y], v:_}, Square]>>deviation_square(Mean, Y, Square), Robots, Squares),
+    aggregate_all(sum(X), (member(X, Squares)), SumOfSquares),
+    length(Robots, Length),
+    Length > 0,
+    Variance is SumOfSquares / Length.
+
+varianceness(Robots, Varianceness) :-
+    variance_x(Robots, X),
+    variance_y(Robots, Y),
+    Varianceness is X + Y.
+
+print_robots_n(Stream, Input, NMoves) :-
+    size(Input, Size),
+    robots(Input, Robots),
+    !,
+    label([NMoves]),
+    nl(Stream),
+    writeln(Stream, NMoves),
+    move_robots(Size, NMoves, Robots, MovedRobots),
+    print_robots(Stream,  Size, MovedRobots).
+
+variant_robots(Input, NMoves, V) :-
+    size(Input, Size),
+    robots(Input, Robots),
+    !,
+    label([NMoves]),
+    move_robots(Size, NMoves, Robots, MovedRobots),
+    varianceness(MovedRobots, V).
+
+solve_part_2(Input, N) :-
+    N in 0..10000,
+    variant_robots(Input, N, V),
+    V < 1000,
+    print_robots_n(user_output, actual, N).
