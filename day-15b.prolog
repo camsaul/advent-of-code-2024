@@ -1,13 +1,13 @@
 :- use_module(library(aggregate), [aggregate_all/3]).
 :- use_module(library(apply), [foldl/4]).
 :- use_module(library(clpfd)).
-:- use_module(library(lists), [append/2]).
+:- use_module(library(lists), [append/3]).
 :- use_module(library(yall)).
 
 :- use_module(bitset_grid_util, [absolute_position/2,
                                  next_absolute_position/4,
                                  xy_absolute_position/3]).
-:- use_module(util, [read_file_lines_to_chars/2,
+:- use_module(util, [read_file_to_chars/2,
                      bitset_set/4,
                      bitset_is_set/2]).
 
@@ -18,8 +18,7 @@ char_direction(v, down).
 char_direction(<, left).
 char_direction(>, right).
 
-next_position(Width, CharDirection, AbsolutePosition, NextAbsolutePosition) :-
-    char_direction(CharDirection, Direction),
+next_position(Width, Direction, AbsolutePosition, NextAbsolutePosition) :-
     next_absolute_position(Width, Direction, AbsolutePosition, NextAbsolutePosition).
 
 package_at_position(PackagePosition, Packages, left_half) :- bitset_is_set(Packages, PackagePosition).
@@ -109,19 +108,38 @@ parse_input(Input, Walls, Packages, RobotPosition) :-
     parse_packages(Input, 0, 0, Packages),
     robot_position(Input, 0, RobotPosition).
 
-split_file_lines(Lines, RoomInputLines, DirectionsLines) :- append([RoomInputLines, [[]], DirectionsLines], Lines).
+grid_character(#).
+grid_character(.).
+grid_character('O').
+grid_character(@).
+
+grid_character(X) --> [X], { grid_character(X) }.
+
+grid_characters([]) --> [].
+grid_characters([X|More]) --> grid_character(X), grid_characters(More).
+
+grid([], 0-0) --> [].
+grid(Grid, Width-Height) -->
+    grid_characters(X),
+    "\n",
+    grid(More, _Width-Height0),
+    {
+        append(X, More, Grid),
+        length(X, Width),
+        Height is Height0 + 1
+    }.
+
+direction(Direction) --> [X], { char_direction(X, Direction) }.
+
+directions([]) --> [].
+directions([X|More]) --> direction(X), directions(More).
+directions(Directions) --> "\n", directions(Directions).
+
+file(Grid, Size, Directions) --> grid(Grid, Size), "\n", directions(Directions).
 
 read_file(Path, Width, RoomInput, Directions) :-
-    read_file_lines_to_chars(Path, Lines),
-    split_file_lines(Lines, RoomLines, DirectionsLines),
-    [FirstRoomLine|_] = RoomLines,
-    length(FirstRoomLine, Width),
-    append(RoomLines, RoomInput),
-    append(DirectionsLines, Directions).
-
-package_gps_coodinate(Width, AbsolutePosition, Coordinate) :-
-    xy_absolute_position(Width, X-Y, AbsolutePosition),
-    Coordinate #= (Y * 100) + X.
+    read_file_to_chars(Path, Chars),
+    phrase(file(RoomInput, Width-_Height, Directions), Chars).
 
 path(example, 'day-15-example.txt').
 path(actual, 'day-15.txt').
@@ -141,6 +159,10 @@ input(Input, Width, Walls, Packages, RobotPosition, Directions) :-
     expand_room(RoomInput0, RoomInput),
     Width #= Width0 * 2,
     parse_input(RoomInput, Walls, Packages, RobotPosition).
+
+package_gps_coodinate(Width, AbsolutePosition, Coordinate) :-
+    xy_absolute_position(Width, X-Y, AbsolutePosition),
+    Coordinate #= (Y * 100) + X.
 
 solve(Input, Out) :-
     input(Input, Width, Walls, Packages, RobotPosition, Directions),

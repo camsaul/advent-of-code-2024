@@ -19,6 +19,7 @@
 
 :- use_module(library(aggregate), [aggregate_all/3]).
 :- use_module(library(apply), [maplist/3, foldl/4]).
+:- use_module(library(apply_macros)). % I guess you need this for efficient YALL usage??
 :- use_module(library(charsio), [with_output_to_chars/3]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [same_length/2, append/3, member/2]).
