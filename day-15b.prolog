@@ -39,8 +39,7 @@ package_at_position(PackagePosition, Packages, right_half) :-
 
 move_package(Width, Direction, Walls, PackagePosition, Packages0, Packages) :-
     \+ package_at_position(PackagePosition, Packages0, PackageHalf)
-->  % no package at position
-    Packages #= Packages0
+->  Packages #= Packages0 % no package at position
 ;   package_at_position(PackagePosition, Packages0, PackageHalf),
     (
         PackageHalf = left_half
@@ -76,7 +75,7 @@ move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages, RobotPo
     ).
 
 move(Width, Directions, Walls, Packages0, RobotPosition0, Packages, RobotPosition) :-
-    foldl({Width, Walls}/[Dir, Pkgs0-Robot0, Pkgs1-Robot1]>>move_robot(Width, Dir, Walls, Pkgs0, Robot0, Pkgs1, Robot1),
+    foldl({Width, Walls}/[Dir, P0-R0, P1-R1]>>move_robot(Width, Dir, Walls, P0, R0, P1, R1),
           Directions,
           Packages0-RobotPosition0,
           Packages-RobotPosition).
