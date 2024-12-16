@@ -1,41 +1,32 @@
 :- use_module(library(aggregate), [aggregate_all/3]).
-:- use_module(library(apply), [maplist/2, foldl/4]).
+:- use_module(library(apply), [foldl/4]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/2]).
 :- use_module(library(yall)).
 
-:- use_module(util, [read_file_lines_to_chars/2]).
+:- use_module(bitset_grid_util, [absolute_position/2,
+                                 next_absolute_position/4,
+                                 xy_absolute_position/3]).
+:- use_module(util, [read_file_lines_to_chars/2,
+                     bitset_set/4,
+                     bitset_is_set/2]).
 
 :- set_prolog_flag(double_quotes, chars).
 
-absolute_position(Width, X-Y, Pos) :-
-    MaxX #= Width - 1,
-    X in 0..MaxX,
-    Y #>= 0,
-    Pos #= X + (Y * Width).
+char_direction(^, up).
+char_direction(v, down).
+char_direction(<, left).
+char_direction(>, right).
 
-set_bit(N0, Index, V, N1) :-
-    V in { 0, 1 },
-    Existing is getbit(N0, Index),
-    (
-        Existing #= V
-    ->  N1 #= N0
-    ;   BitMask #= 1 << Index,
-        N1 #= N0 xor BitMask
-    ).
+next_position(Width, CharDirection, AbsolutePosition, NextAbsolutePosition) :-
+    char_direction(CharDirection, Direction),
+    next_absolute_position(Width, Direction, AbsolutePosition, NextAbsolutePosition).
 
-next_position(Width,  '^', Position0, Position1) :- Position1 #= Position0 - Width.
-next_position(Width,  'v', Position0, Position1) :- Position1 #= Position0 + Width.
-next_position(_Width, '<', Position0, Position1) :- Position1 #= Position0 - 1.
-next_position(_Width, '>', Position0, Position1) :- Position1 #= Position0 + 1.
-
-object_at_position(AbsolutePosition, Objects) :- 1 is getbit(Objects, AbsolutePosition).
-
-package_at_position(PackagePosition, Packages, left_half) :- object_at_position(PackagePosition, Packages).
+package_at_position(PackagePosition, Packages, left_half) :- bitset_is_set(Packages, PackagePosition).
 
 package_at_position(PackagePosition, Packages, right_half) :-
     LeftPosition = PackagePosition - 1,
-    object_at_position(LeftPosition, Packages).
+    bitset_is_set(Packages, LeftPosition).
 
 move_package(Width, Direction, Walls, PackagePosition, Packages0, Packages) :-
     \+ package_at_position(PackagePosition, Packages0, PackageHalf)
@@ -51,21 +42,21 @@ move_package(Width, Direction, Walls, PackagePosition, Packages0, Packages) :-
     next_position(Width, Direction, LeftPosition, NextLeftPosition),
     next_position(Width, Direction, RightPosition, NextRightPosition),
     % check for walls
-    \+ object_at_position(NextLeftPosition, Walls),
-    \+ object_at_position(NextRightPosition, Walls),
+    \+ bitset_is_set(Walls, NextLeftPosition),
+    \+ bitset_is_set(Walls, NextRightPosition),
     % move left half into the ether
-    set_bit(Packages0, LeftPosition, 0, Packages1),
+    bitset_set(Packages0, LeftPosition, 0, Packages1),
     % (recursively) move both sides
     move_package(Width, Direction, Walls, NextLeftPosition, Packages1, Packages2),
     move_package(Width, Direction, Walls, NextRightPosition, Packages2, Packages3),
     % put left half into its new position
-    set_bit(Packages3, NextLeftPosition, 1, Packages).
+    bitset_set(Packages3, NextLeftPosition, 1, Packages).
 
 move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages, RobotPosition) :-
     next_position(Width, Direction, RobotPosition0, RobotPosition1),
     (
         (
-            \+ object_at_position(RobotPosition1, Walls),
+            \+ bitset_is_set(Walls, RobotPosition1),
             RobotPosition #= RobotPosition1,
             move_package(Width, Direction, Walls, RobotPosition1, Packages0, Packages)
         )
@@ -83,7 +74,7 @@ move(Width, Directions, Walls, Packages0, RobotPosition0, Packages, RobotPositio
 parse_walls([], _AbsolutePosition, Walls, Walls).
 
 parse_walls(['#'|More], AbsolutePosition, Walls0, Walls) :-
-    set_bit(Walls0, AbsolutePosition, 1, Walls1),
+    bitset_set(Walls0, AbsolutePosition, 1, Walls1),
     NextPosition #= AbsolutePosition + 1,
     parse_walls(More, NextPosition, Walls1, Walls).
 
@@ -95,7 +86,7 @@ parse_walls([Char|More], AbsolutePosition, Walls0, Walls) :-
 parse_packages([], _AbsolutePosition, Packages, Packages).
 
 parse_packages(['['|More], AbsolutePosition, Packages0, Packages) :-
-    set_bit(Packages0, AbsolutePosition, 1, Packages1),
+    bitset_set(Packages0, AbsolutePosition, 1, Packages1),
     NextPosition #= AbsolutePosition + 1,
     parse_packages(More, NextPosition, Packages1, Packages).
 
@@ -128,21 +119,8 @@ read_file(Path, Width, RoomInput, Directions) :-
     append(RoomLines, RoomInput),
     append(DirectionsLines, Directions).
 
-set_bit_index(N, Offset, Index) :-
-    N #> 0,
-    LSBIndex is lsb(N),
-    Index0 #= Offset + LSBIndex,
-    (
-        Index #= Index0
-    ;   NextN is N >> ( LSBIndex + 1),
-        NextIndex #= Index0 + 1,
-        set_bit_index(NextN, NextIndex, Index)
-    ).
-
-set_bit_index(N, Index) :- set_bit_index(N, 0, Index).
-
 package_gps_coodinate(Width, AbsolutePosition, Coordinate) :-
-    absolute_position(Width, X-Y, AbsolutePosition),
+    xy_absolute_position(Width, X-Y, AbsolutePosition),
     Coordinate #= (Y * 100) + X.
 
 path(example, 'day-15-example.txt').
@@ -168,9 +146,11 @@ solve(Input, Out) :-
     input(Input, Width, Walls, Packages, RobotPosition, Directions),
     move(Width, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
     !,
+    % Height #= Width // 2,
+    % print_room(Width-Height, Walls, Packages1, RobotPosition1),
     aggregate_all(sum(Coordinate),
                   (
-                      set_bit_index(Packages1, Position),
+                      bitset_is_set(Packages1, Position),
                       package_gps_coodinate(Width, Position, Coordinate)
                   ),
                   Out).
@@ -179,11 +159,19 @@ solve(Input, Out) :-
 % Printing code for debugging
 %
 
-position(Width-Height, X-Y) :-
-    MaxX #= Width - 1,
-    MaxY #= Height - 1,
-    X in 0..MaxX,
-    Y in 0..MaxY.
+print_position(Walls, Packages, RobotPosition, AbsolutePosition) :-
+    bitset_is_set(Walls, AbsolutePosition)
+->  write('#')
+;   bitset_is_set(Packages, AbsolutePosition)
+->  write('[')
+;   (
+        LeftPosition #= AbsolutePosition - 1,
+        bitset_is_set(Packages, LeftPosition)
+    )
+->  write(']')
+;   RobotPosition #= AbsolutePosition
+->  write('@')
+;   write('.').
 
 print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition) :-
     (
@@ -193,28 +181,7 @@ print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition) :-
     ),
     print_position(Walls, Packages, RobotPosition, AbsolutePosition).
 
-print_position(Walls, Packages, RobotPosition, AbsolutePosition) :-
-    object_at_position(AbsolutePosition, Walls)
-->  write('#')
-;   object_at_position(AbsolutePosition, Packages)
-->  write('[')
-;   (
-        LeftPosition #= AbsolutePosition - 1,
-        object_at_position(LeftPosition, Packages)
-    )
-->  write(']')
-;   RobotPosition #= AbsolutePosition
-->  write('@')
-;   write('.').
-
 print_room(Width-Height, Walls, Packages, RobotPosition) :-
-    findall(AbsolutePosition,
-            (
-                position(Width-Height, X-Y),
-                label([Y, X]),
-                absolute_position(Width, X-Y, AbsolutePosition)
-            ),
-            AbsolutePositions),
-    maplist(call(print_position(Width, Walls, Packages, RobotPosition)),
-            AbsolutePositions),
+    forall((absolute_position(Width-Height, AbsolutePosition), label([AbsolutePosition])),
+           print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition)),
     nl.

@@ -124,7 +124,6 @@ print_robot(Stream, [Width, Height], Robots, [X, Y]) :-
 
 print_robots(Stream, Size, Robots) :- findall(Position, print_robot(Stream, Size, Robots, Position), _).
 
-% Calculate the mean of a list of numbers
 mean_x(Robots, Mean) :-
     aggregate_all(sum(X), (member(robot{p: [X, _Y], v:_}, Robots)), Sum),
     length(Robots, Length),
@@ -135,11 +134,9 @@ mean_y(Robots, Mean) :-
     length(Robots, Length),
     Mean is Sum / Length.
 
-% Helper predicate to calculate the square of the deviation from the mean
 deviation_square(Mean, Number, Square) :-
     Square is (Number - Mean) ^ 2.
 
-% Calculate the variance of a list of numbers
 variance_x(Robots, Variance) :-
     mean_x(Robots, Mean),
     maplist({Mean}/[robot{p:[X, _Y], v:_}, Square]>>deviation_square(Mean, X, Square), Robots, Squares),
