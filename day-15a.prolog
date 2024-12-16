@@ -1,6 +1,8 @@
-:- use_module(library(apply), [maplist/2]).
+:- use_module(library(aggregate), [aggregate_all/3]).
+:- use_module(library(apply), [maplist/2, foldl/4]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/2]).
+:- use_module(library(yall)).
 
 :- use_module(util, [read_file_lines_to_chars/2]).
 
@@ -49,12 +51,11 @@ move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages, RobotPo
         RobotPosition #= RobotPosition0
     ).
 
-move(_Size, [], _Walls, Packages, RobotPosition, Packages, RobotPosition).
-
-move(Width-Height, [Direction|MoreDirections], Walls, Packages0, RobotPosition0, Packages, RobotPosition) :-
-    % print_room(Width-Height, Walls, Packages0, RobotPosition0),
-    move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages1, RobotPosition1),
-    move(Width-Height, MoreDirections, Walls, Packages1, RobotPosition1, Packages, RobotPosition).
+move(Width, Directions, Walls, Packages0, RobotPosition0, Packages, RobotPosition) :-
+    foldl({Width, Walls}/[Dir, P0-R0, P1-R1]>>move_robot(Width, Dir, Walls, P0, R0, P1, R1),
+          Directions,
+          Packages0-RobotPosition0,
+          Packages-RobotPosition).
 
 object_at_position(AbsolutePosition, Objects) :- 1 is getbit(Objects, AbsolutePosition).
 
@@ -95,10 +96,9 @@ parse_input(Input, Walls, Packages, RobotPosition) :-
 
 split_file_lines(Lines, RoomInputLines, DirectionsLines) :- append([RoomInputLines, [[]], DirectionsLines], Lines).
 
-read_file(Path, Width-Height, RoomInput, Directions) :-
+read_file(Path, Width, RoomInput, Directions) :-
     read_file_lines_to_chars(Path, Lines),
     split_file_lines(Lines, RoomLines, DirectionsLines),
-    length(RoomLines, Height),
     [FirstRoomLine|_] = RoomLines,
     length(FirstRoomLine, Width),
     append(RoomLines, RoomInput),
@@ -124,15 +124,14 @@ package_gps_coodinate(Width, AbsolutePosition, Coordinate) :-
 path(example, 'day-15-example.txt').
 path(actual, 'day-15.txt').
 
-input(Input, Size, Walls, Packages, RobotPosition, Directions) :-
+input(Input, Width, Walls, Packages, RobotPosition, Directions) :-
     path(Input, Path),
-    read_file(Path, Size, RoomInput, Directions),
+    read_file(Path, Width, RoomInput, Directions),
     parse_input(RoomInput, Walls, Packages, RobotPosition).
 
 solve(Input, Out) :-
-    input(Input, Size, Walls, Packages, RobotPosition, Directions),
-    move(Size, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
-    Width-_Height = Size,
+    input(Input, Width, Walls, Packages, RobotPosition, Directions),
+    move(Width, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
     !,
     aggregate_all(sum(Coordinate),
                   (

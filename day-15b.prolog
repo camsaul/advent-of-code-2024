@@ -119,10 +119,9 @@ parse_input(Input, Walls, Packages, RobotPosition) :-
 
 split_file_lines(Lines, RoomInputLines, DirectionsLines) :- append([RoomInputLines, [[]], DirectionsLines], Lines).
 
-read_file(Path, Width-Height, RoomInput, Directions) :-
+read_file(Path, Width, RoomInput, Directions) :-
     read_file_lines_to_chars(Path, Lines),
     split_file_lines(Lines, RoomLines, DirectionsLines),
-    length(RoomLines, Height),
     [FirstRoomLine|_] = RoomLines,
     length(FirstRoomLine, Width),
     append(RoomLines, RoomInput),
@@ -157,16 +156,15 @@ expand_room([], []).
 
 expand_room([Char|MoreIn], [X, Y | MoreOut]) :- transform_input(Char, [X, Y]), expand_room(MoreIn, MoreOut).
 
-input(Input, Size, Walls, Packages, RobotPosition, Directions) :-
+input(Input, Width, Walls, Packages, RobotPosition, Directions) :-
     path(Input, Path),
-    read_file(Path, Width0-Height, RoomInput0, Directions),
+    read_file(Path, Width0, RoomInput0, Directions),
     expand_room(RoomInput0, RoomInput),
     Width #= Width0 * 2,
-    Size = Width-Height,
     parse_input(RoomInput, Walls, Packages, RobotPosition).
 
 solve(Input, Out) :-
-    input(Input, Width-_Height, Walls, Packages, RobotPosition, Directions),
+    input(Input, Width, Walls, Packages, RobotPosition, Directions),
     move(Width, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
     !,
     aggregate_all(sum(Coordinate),
