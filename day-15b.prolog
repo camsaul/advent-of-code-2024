@@ -221,5 +221,4 @@ solve(Input, Out) :-
                       set_bit_index(Packages1, Position),
                       package_gps_coodinate(Width, Position, Coordinate)
                   ),
-                  Out),
-    !.
+                  Out).
