@@ -197,12 +197,11 @@ transform_input('O', "[]").
 transform_input('.', "..").
 transform_input('@', "@.").
 
-expand_room([], Out, Out).
+expand_room([], []).
 
-expand_room([Char|MoreIn], Out0, Out) :-
-    transform_input(Char, ReplacementChars),
-    append(Out0, ReplacementChars, Out1),
-    expand_room(MoreIn, Out1, Out).
+expand_room([Char|MoreIn], [X, Y | MoreOut]) :-
+    transform_input(Char, [X, Y]),
+    expand_room(MoreIn, MoreOut).
 
 expand_room(RoomInput, Expanded) :- expand_room(RoomInput, [], Expanded).
 
@@ -221,4 +220,5 @@ solve(Input, Out) :-
     set_bits(Packages1, PackagePositions),
     Width-_Height = Size,
     maplist(call(package_gps_coodinate(Width)), PackagePositions, Coordinates),
-    foldl([Coordinate, Acc0, Acc1]>>(Acc1 #= Acc0 + Coordinate), Coordinates, 0, Out).
+    foldl([Coordinate, Acc0, Acc1]>>(Acc1 #= Acc0 + Coordinate), Coordinates, 0, Out),
+    !.
