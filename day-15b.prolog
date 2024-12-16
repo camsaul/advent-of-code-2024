@@ -1,7 +1,8 @@
-:- use_module(library(apply), [maplist/2, maplist/3, foldl/4]).
+:- use_module(library(aggregate), [aggregate_all/3]).
+:- use_module(library(apply), [maplist/2]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/2]).
-:- use_module(library(yall)).
+
 :- use_module(util, [read_file_lines_to_chars/2]).
 
 :- set_prolog_flag(double_quotes, chars).
@@ -170,20 +171,18 @@ read_file(Path, Width-Height, RoomInput, Directions) :-
     append(RoomLines, RoomInput),
     append(DirectionsLines, Directions).
 
-set_bits(0, _Position, []).
-
-set_bits(N, Position, Bits) :-
+set_bit_index(N, Offset, Index) :-
     N #> 0,
+    LSBIndex is lsb(N),
+    Index0 #= Offset + LSBIndex,
     (
-        1 is N /\ 1
-    ->  Bits = [Position | MoreBits]
-    ;   Bits = MoreBits
-    ),
-    NextN is N >> 1,
-    NextPosition #= Position + 1,
-    set_bits(NextN, NextPosition, MoreBits).
+        Index #= Index0
+    ;   NextN is N >> ( LSBIndex + 1),
+        NextIndex #= Index0 + 1,
+        set_bit_index(NextN, NextIndex, Index)
+    ).
 
-set_bits(N, Bits) :- set_bits(N, 0, Bits).
+set_bit_index(N, Index) :- set_bit_index(N, 0, Index).
 
 package_gps_coodinate(Width, AbsolutePosition, Coordinate) :-
     absolute_position(Width, X-Y, AbsolutePosition),
@@ -203,8 +202,6 @@ expand_room([Char|MoreIn], [X, Y | MoreOut]) :-
     transform_input(Char, [X, Y]),
     expand_room(MoreIn, MoreOut).
 
-expand_room(RoomInput, Expanded) :- expand_room(RoomInput, [], Expanded).
-
 input(Input, Size, Walls, Packages, RobotPosition, Directions) :-
     path(Input, Path),
     read_file(Path, Width0-Height, RoomInput0, Directions),
@@ -217,8 +214,12 @@ solve(Input, Out) :-
     input(Input, Size, Walls, Packages, RobotPosition, Directions),
     move(Size, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
     % print_room(Size, Walls, Packages1, RobotPosition1),
-    set_bits(Packages1, PackagePositions),
     Width-_Height = Size,
-    maplist(call(package_gps_coodinate(Width)), PackagePositions, Coordinates),
-    foldl([Coordinate, Acc0, Acc1]>>(Acc1 #= Acc0 + Coordinate), Coordinates, 0, Out),
+    !,
+    aggregate_all(sum(Coordinate),
+                  (
+                      set_bit_index(Packages1, Position),
+                      package_gps_coodinate(Width, Position, Coordinate)
+                  ),
+                  Out),
     !.
