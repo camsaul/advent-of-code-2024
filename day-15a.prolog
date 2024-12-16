@@ -1,7 +1,7 @@
-:- use_module(library(apply), [maplist/2, maplist/3, foldl/4]).
+:- use_module(library(apply), [maplist/2]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/2]).
-:- use_module(library(yall)).
+
 :- use_module(util, [read_file_lines_to_chars/2]).
 
 :- set_prolog_flag(double_quotes, chars).
@@ -18,11 +18,7 @@ set_bit(N0, Index, V, N1) :-
     (
         Existing #= V
     ->  N1 #= N0
-    ;   (
-            V #= 1
-        ->  BitMask #= V << Index
-        ;   BitMask #= 1 << Index
-        ),
+    ;   BitMask #= 1 << Index,
         N1 #= N0 xor BitMask
     ).
 
@@ -60,42 +56,7 @@ move(Width-Height, [Direction|MoreDirections], Walls, Packages0, RobotPosition0,
     move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages1, RobotPosition1),
     move(Width-Height, MoreDirections, Walls, Packages1, RobotPosition1, Packages, RobotPosition).
 
-position(Width-Height, X-Y) :-
-    MaxX #= Width - 1,
-    MaxY #= Height - 1,
-    X in 0..MaxX,
-    Y in 0..MaxY.
-
 object_at_position(AbsolutePosition, Objects) :- 1 is getbit(Objects, AbsolutePosition).
-
-print_room(Width-Height, Walls, Packages, RobotPosition) :-
-    findall(AbsolutePosition,
-            (
-                position(Width-Height, X-Y),
-                label([Y, X]),
-                absolute_position(Width, X-Y, AbsolutePosition)
-            ),
-            AbsolutePositions),
-    maplist(call(print_position(Width, Walls, Packages, RobotPosition)),
-            AbsolutePositions),
-    nl.
-
-print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition) :-
-    (
-        AbsolutePosition mod Width #= 0
-    ->  nl
-    ;   true
-    ),
-    print_position(Walls, Packages, RobotPosition, AbsolutePosition).
-
-print_position(Walls, Packages, RobotPosition, AbsolutePosition) :-
-    object_at_position(AbsolutePosition, Walls)
-->  write('#')
-;   object_at_position(AbsolutePosition, Packages)
-->  write('0')
-;   RobotPosition #= AbsolutePosition
-->  write('@')
-;   write('.').
 
 parse_walls([], _AbsolutePosition, Walls, Walls).
 
@@ -143,20 +104,18 @@ read_file(Path, Width-Height, RoomInput, Directions) :-
     append(RoomLines, RoomInput),
     append(DirectionsLines, Directions).
 
-set_bits(0, _Position, []).
-
-set_bits(N, Position, Bits) :-
+set_bit_index(N, Offset, Index) :-
     N #> 0,
+    LSBIndex is lsb(N),
+    Index0 #= Offset + LSBIndex,
     (
-        1 is N /\ 1
-    ->  Bits = [Position | MoreBits]
-    ;   Bits = MoreBits
-    ),
-    NextN is N >> 1,
-    NextPosition #= Position + 1,
-    set_bits(NextN, NextPosition, MoreBits).
+        Index #= Index0
+    ;   NextN is N >> ( LSBIndex + 1),
+        NextIndex #= Index0 + 1,
+        set_bit_index(NextN, NextIndex, Index)
+    ).
 
-set_bits(N, Bits) :- set_bits(N, 0, Bits).
+set_bit_index(N, Index) :- set_bit_index(N, 0, Index).
 
 package_gps_coodinate(Width, AbsolutePosition, Coordinate) :-
     absolute_position(Width, X-Y, AbsolutePosition),
@@ -173,8 +132,50 @@ input(Input, Size, Walls, Packages, RobotPosition, Directions) :-
 solve(Input, Out) :-
     input(Input, Size, Walls, Packages, RobotPosition, Directions),
     move(Size, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
-    % print_room(Size, Walls, Packages1, RobotPosition1),
-    set_bits(Packages1, PackagePositions),
     Width-_Height = Size,
-    maplist(call(package_gps_coodinate(Width)), PackagePositions, Coordinates),
-    foldl([Coordinate, Acc0, Acc1]>>(Acc1 #= Acc0 + Coordinate), Coordinates, 0, Out).
+    !,
+    aggregate_all(sum(Coordinate),
+                  (
+                      set_bit_index(Packages1, Position),
+                      package_gps_coodinate(Width, Position, Coordinate)
+                  ),
+                  Out).
+
+%
+% Printing code for debugging
+%
+
+position(Width-Height, X-Y) :-
+    MaxX #= Width - 1,
+    MaxY #= Height - 1,
+    X in 0..MaxX,
+    Y in 0..MaxY.
+
+print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition) :-
+    (
+        AbsolutePosition mod Width #= 0
+    ->  nl
+    ;   true
+    ),
+    print_position(Walls, Packages, RobotPosition, AbsolutePosition).
+
+print_position(Walls, Packages, RobotPosition, AbsolutePosition) :-
+    object_at_position(AbsolutePosition, Walls)
+->  write('#')
+;   object_at_position(AbsolutePosition, Packages)
+->  write('0')
+;   RobotPosition #= AbsolutePosition
+->  write('@')
+;   write('.').
+
+print_room(Width-Height, Walls, Packages, RobotPosition) :-
+    findall(AbsolutePosition,
+            (
+                position(Width-Height, X-Y),
+                label([Y, X]),
+                absolute_position(Width, X-Y, AbsolutePosition)
+            ),
+            AbsolutePositions),
+    maplist(call(print_position(Width, Walls, Packages, RobotPosition)),
+            AbsolutePositions),
+    nl.
