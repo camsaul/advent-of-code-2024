@@ -19,11 +19,7 @@ set_bit(N0, Index, V, N1) :-
     (
         Existing #= V
     ->  N1 #= N0
-    ;   (
-            V #= 1
-        ->  BitMask #= V << Index
-        ;   BitMask #= 1 << Index
-        ),
+    ;   BitMask #= 1 << Index,
         N1 #= N0 xor BitMask
     ).
 
@@ -83,47 +79,7 @@ move(Width-Height, [Direction|MoreDirections], Walls, Packages0, RobotPosition0,
     move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages1, RobotPosition1),
     move(Width-Height, MoreDirections, Walls, Packages1, RobotPosition1, Packages, RobotPosition).
 
-position(Width-Height, X-Y) :-
-    MaxX #= Width - 1,
-    MaxY #= Height - 1,
-    X in 0..MaxX,
-    Y in 0..MaxY.
-
 object_at_position(AbsolutePosition, Objects) :- 1 is getbit(Objects, AbsolutePosition).
-
-print_room(Width-Height, Walls, Packages, RobotPosition) :-
-    findall(AbsolutePosition,
-            (
-                position(Width-Height, X-Y),
-                label([Y, X]),
-                absolute_position(Width, X-Y, AbsolutePosition)
-            ),
-            AbsolutePositions),
-    maplist(call(print_position(Width, Walls, Packages, RobotPosition)),
-            AbsolutePositions),
-    nl.
-
-print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition) :-
-    (
-        AbsolutePosition mod Width #= 0
-    ->  nl
-    ;   true
-    ),
-    print_position(Walls, Packages, RobotPosition, AbsolutePosition).
-
-print_position(Walls, Packages, RobotPosition, AbsolutePosition) :-
-    object_at_position(AbsolutePosition, Walls)
-->  write('#')
-;   object_at_position(AbsolutePosition, Packages)
-->  write('[')
-;   (
-        LeftPosition #= AbsolutePosition - 1,
-        object_at_position(LeftPosition, Packages)
-    )
-->  write(']')
-;   RobotPosition #= AbsolutePosition
-->  write('@')
-;   write('.').
 
 parse_walls([], _AbsolutePosition, Walls, Walls).
 
@@ -198,9 +154,7 @@ transform_input('@', "@.").
 
 expand_room([], []).
 
-expand_room([Char|MoreIn], [X, Y | MoreOut]) :-
-    transform_input(Char, [X, Y]),
-    expand_room(MoreIn, MoreOut).
+expand_room([Char|MoreIn], [X, Y | MoreOut]) :- transform_input(Char, [X, Y]), expand_room(MoreIn, MoreOut).
 
 input(Input, Size, Walls, Packages, RobotPosition, Directions) :-
     path(Input, Path),
@@ -213,7 +167,6 @@ input(Input, Size, Walls, Packages, RobotPosition, Directions) :-
 solve(Input, Out) :-
     input(Input, Size, Walls, Packages, RobotPosition, Directions),
     move(Size, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
-    % print_room(Size, Walls, Packages1, RobotPosition1),
     Width-_Height = Size,
     !,
     aggregate_all(sum(Coordinate),
@@ -222,3 +175,47 @@ solve(Input, Out) :-
                       package_gps_coodinate(Width, Position, Coordinate)
                   ),
                   Out).
+
+%
+% Printing code for debugging
+%
+
+position(Width-Height, X-Y) :-
+    MaxX #= Width - 1,
+    MaxY #= Height - 1,
+    X in 0..MaxX,
+    Y in 0..MaxY.
+
+print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition) :-
+    (
+        AbsolutePosition mod Width #= 0
+    ->  nl
+    ;   true
+    ),
+    print_position(Walls, Packages, RobotPosition, AbsolutePosition).
+
+print_position(Walls, Packages, RobotPosition, AbsolutePosition) :-
+    object_at_position(AbsolutePosition, Walls)
+->  write('#')
+;   object_at_position(AbsolutePosition, Packages)
+->  write('[')
+;   (
+        LeftPosition #= AbsolutePosition - 1,
+        object_at_position(LeftPosition, Packages)
+    )
+->  write(']')
+;   RobotPosition #= AbsolutePosition
+->  write('@')
+;   write('.').
+
+print_room(Width-Height, Walls, Packages, RobotPosition) :-
+    findall(AbsolutePosition,
+            (
+                position(Width-Height, X-Y),
+                label([Y, X]),
+                absolute_position(Width, X-Y, AbsolutePosition)
+            ),
+            AbsolutePositions),
+    maplist(call(print_position(Width, Walls, Packages, RobotPosition)),
+            AbsolutePositions),
+    nl.
