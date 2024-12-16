@@ -106,10 +106,11 @@ parse_packages([Char|More], AbsolutePosition, Packages0, Packages) :-
 
 robot_position([], Position, Position) :- fail.
 
+robot_position(['@'|_], Position, Position).
+
 robot_position([Char|More], Position0, Position) :-
-    Char = '@'
-->  Position = Position0
-;   NextPosition #= Position0 + 1,
+    Char \= '@',
+    NextPosition #= Position0 + 1,
     robot_position(More, NextPosition, Position).
 
 parse_input(Input, Walls, Packages, RobotPosition) :-

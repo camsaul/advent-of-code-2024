@@ -29,6 +29,8 @@ next_position(Width,  'v', Position0, Position1) :- Position1 #= Position0 + Wid
 next_position(_Width, '<', Position0, Position1) :- Position1 #= Position0 - 1.
 next_position(_Width, '>', Position0, Position1) :- Position1 #= Position0 + 1.
 
+object_at_position(AbsolutePosition, Objects) :- 1 is getbit(Objects, AbsolutePosition).
+
 move_package(Width, Direction, Walls, PackagePosition, Packages0, Packages) :-
     \+ object_at_position(PackagePosition, Packages0)
 ->  Packages #= Packages0
@@ -57,36 +59,37 @@ move(Width, Directions, Walls, Packages0, RobotPosition0, Packages, RobotPositio
           Packages0-RobotPosition0,
           Packages-RobotPosition).
 
-object_at_position(AbsolutePosition, Objects) :- 1 is getbit(Objects, AbsolutePosition).
-
 parse_walls([], _AbsolutePosition, Walls, Walls).
 
-parse_walls([Char|More], AbsolutePosition, Walls0, Walls) :-
-    (
-        Char = '#'
-    ->  set_bit(Walls0, AbsolutePosition, 1, Walls1)
-    ;   Walls1 #= Walls0
-    ),
+parse_walls(['#'|More], AbsolutePosition, Walls0, Walls) :-
+    set_bit(Walls0, AbsolutePosition, 1, Walls1),
     NextPosition #= AbsolutePosition + 1,
     parse_walls(More, NextPosition, Walls1, Walls).
 
+parse_walls([Char|More], AbsolutePosition, Walls0, Walls) :-
+    Char \= '#',
+    NextPosition #= AbsolutePosition + 1,
+    parse_walls(More, NextPosition, Walls0, Walls).
+
 parse_packages([], _AbsolutePosition, Packages, Packages).
 
-parse_packages([Char|More], AbsolutePosition, Packages0, Packages) :-
-    (
-        Char = 'O'
-    ->  set_bit(Packages0, AbsolutePosition, 1, Packages1)
-    ;   Packages1 #= Packages0
-    ),
+parse_packages(['O'|More], AbsolutePosition, Packages0, Packages) :-
+    set_bit(Packages0, AbsolutePosition, 1, Packages1),
     NextPosition #= AbsolutePosition + 1,
     parse_packages(More, NextPosition, Packages1, Packages).
 
+parse_packages([Char|More], AbsolutePosition, Packages0, Packages) :-
+    Char \= 'O',
+    NextPosition #= AbsolutePosition + 1,
+    parse_packages(More, NextPosition, Packages0, Packages).
+
 robot_position([], Position, Position) :- fail.
 
+robot_position(['@'|_], Position, Position).
+
 robot_position([Char|More], Position0, Position) :-
-    Char = '@'
-->  Position = Position0
-;   NextPosition #= Position0 + 1,
+    Char \= '@',
+    NextPosition #= Position0 + 1,
     robot_position(More, NextPosition, Position).
 
 parse_input(Input, Walls, Packages, RobotPosition) :-
