@@ -1,7 +1,8 @@
 :- use_module(library(aggregate), [aggregate_all/3]).
-:- use_module(library(apply), [maplist/2]).
+:- use_module(library(apply), [maplist/2, foldl/4]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/2]).
+:- use_module(library(yall)).
 
 :- use_module(util, [read_file_lines_to_chars/2]).
 
@@ -27,6 +28,8 @@ next_position(Width,  '^', Position0, Position1) :- Position1 #= Position0 - Wid
 next_position(Width,  'v', Position0, Position1) :- Position1 #= Position0 + Width.
 next_position(_Width, '<', Position0, Position1) :- Position1 #= Position0 - 1.
 next_position(_Width, '>', Position0, Position1) :- Position1 #= Position0 + 1.
+
+object_at_position(AbsolutePosition, Objects) :- 1 is getbit(Objects, AbsolutePosition).
 
 package_at_position(PackagePosition, Packages, left_half) :- object_at_position(PackagePosition, Packages).
 
@@ -72,36 +75,35 @@ move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages, RobotPo
         RobotPosition #= RobotPosition0
     ).
 
-move(_Size, [], _Walls, Packages, RobotPosition, Packages, RobotPosition).
-
-move(Width-Height, [Direction|MoreDirections], Walls, Packages0, RobotPosition0, Packages, RobotPosition) :-
-    % print_room(Width-Height, Walls, Packages0, RobotPosition0),
-    move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages1, RobotPosition1),
-    move(Width-Height, MoreDirections, Walls, Packages1, RobotPosition1, Packages, RobotPosition).
-
-object_at_position(AbsolutePosition, Objects) :- 1 is getbit(Objects, AbsolutePosition).
+move(Width, Directions, Walls, Packages0, RobotPosition0, Packages, RobotPosition) :-
+    foldl({Width, Walls}/[Dir, Pkgs0-Robot0, Pkgs1-Robot1]>>move_robot(Width, Dir, Walls, Pkgs0, Robot0, Pkgs1, Robot1),
+          Directions,
+          Packages0-RobotPosition0,
+          Packages-RobotPosition).
 
 parse_walls([], _AbsolutePosition, Walls, Walls).
 
-parse_walls([Char|More], AbsolutePosition, Walls0, Walls) :-
-    (
-        Char = '#'
-    ->  set_bit(Walls0, AbsolutePosition, 1, Walls1)
-    ;   Walls1 #= Walls0
-    ),
+parse_walls(['#'|More], AbsolutePosition, Walls0, Walls) :-
+    set_bit(Walls0, AbsolutePosition, 1, Walls1),
     NextPosition #= AbsolutePosition + 1,
     parse_walls(More, NextPosition, Walls1, Walls).
 
+parse_walls([Char|More], AbsolutePosition, Walls0, Walls) :-
+    Char \= '#',
+    NextPosition #= AbsolutePosition + 1,
+    parse_walls(More, NextPosition, Walls0, Walls).
+
 parse_packages([], _AbsolutePosition, Packages, Packages).
 
-parse_packages([Char|More], AbsolutePosition, Packages0, Packages) :-
-    (
-        Char = '['
-    ->  set_bit(Packages0, AbsolutePosition, 1, Packages1)
-    ;   Packages1 #= Packages0
-    ),
+parse_packages(['['|More], AbsolutePosition, Packages0, Packages) :-
+    set_bit(Packages0, AbsolutePosition, 1, Packages1),
     NextPosition #= AbsolutePosition + 1,
     parse_packages(More, NextPosition, Packages1, Packages).
+
+parse_packages([Char|More], AbsolutePosition, Packages0, Packages) :-
+    Char \= '[',
+    NextPosition #= AbsolutePosition + 1,
+    parse_packages(More, NextPosition, Packages0, Packages).
 
 robot_position([], Position, Position) :- fail.
 
@@ -165,9 +167,8 @@ input(Input, Size, Walls, Packages, RobotPosition, Directions) :-
     parse_input(RoomInput, Walls, Packages, RobotPosition).
 
 solve(Input, Out) :-
-    input(Input, Size, Walls, Packages, RobotPosition, Directions),
-    move(Size, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
-    Width-_Height = Size,
+    input(Input, Width-_Height, Walls, Packages, RobotPosition, Directions),
+    move(Width, Directions, Walls, Packages, RobotPosition, Packages1, _RobotPosition1),
     !,
     aggregate_all(sum(Coordinate),
                   (
