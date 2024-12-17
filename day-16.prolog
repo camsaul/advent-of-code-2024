@@ -157,8 +157,6 @@ solve(Config, StartState, BestCost) :-
     forall(move_forward_or_turn(Config, StartState, state(_, _, _, Cost)), update_best_cost(Cost)),
     best_total_cost(BestCost).
 
-solve(Input, BestCost) :- init(Input, Config, StartState), solve(Config, StartState, BestCost), !.
-
 solve_part_1(Input, BestCost) :- init(Input, Config, StartState), solve(Config, StartState, BestCost).
 
 solve_part_2(Input, NumVisited) :-
