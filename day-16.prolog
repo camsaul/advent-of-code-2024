@@ -1,5 +1,7 @@
+:- use_module(library(apply), [foldl/4]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/3]).
+:- use_module(library(yall)).
 :- use_module(bitset_grid_util, [next_absolute_position/4]).
 :- use_module(util, [read_file_to_chars/2, goal_bitset/3, first_index/3, bitset_is_set/2, bitset_set/4]).
 
@@ -55,20 +57,22 @@ config_walls(config(Walls, _, _, _), Walls).
 config_size(config(_, Size, _, _), Size).
 config_end_position(config(_, _, _, EndPosition), EndPosition).
 
+state_visited_nodes(state(VisitedNodes, _, _, _), VisitedNodes).
 state_position(state(_, Position, _, _), Position).
+state_cost(state(_, _, _, Cost), Cost).
 
 :- dynamic(best_total_cost/1).
 
 is_best_total_cost(Cost) :-
     best_total_cost(PreviousBest)
-->  Cost #< PreviousBest
+->  Cost #=< PreviousBest
 ;   true.
 
 :- dynamic(best_cost/3).
 
 is_best_cost_from_position(Position, Direction, Cost) :-
     best_cost(Position, Direction, PreviousBestCost)
-->  Cost #< PreviousBestCost
+->  Cost #=< PreviousBestCost
 ;   true.
 
 init(Input, config(Walls, Size, StartPosition, EndPosition), state(VisitedNodes, StartPosition, right, 0)) :-
@@ -154,3 +158,20 @@ solve(Config, StartState, BestCost) :-
     best_total_cost(BestCost).
 
 solve(Input, BestCost) :- init(Input, Config, StartState), solve(Config, StartState, BestCost), !.
+
+solve_part_1(Input, BestCost) :- init(Input, Config, StartState), solve(Config, StartState, BestCost).
+
+solve_part_2(Input, NumVisited) :-
+    init(Input, Config, StartState),
+    solve(Config, StartState, BestCost),
+    findall(VisitedNodes,
+            (move_forward_or_turn(Config, StartState, EndState),
+             state_cost(EndState, Cost),
+             Cost #= BestCost,
+             state_visited_nodes(EndState, VisitedNodes)),
+            BestVisitedNodes),
+    foldl([Item, Acc0, Acc1]>>(Acc1 #= Acc0 \/ Item),
+          BestVisitedNodes,
+          0,
+          AllVisitedNodes),
+    NumVisited #= popcount(AllVisitedNodes).
