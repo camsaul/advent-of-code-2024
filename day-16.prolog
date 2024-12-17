@@ -1,12 +1,7 @@
 :- use_module(library(clpfd)).
-
-:- use_module(util, [read_file_to_chars/2,
-                     goal_bitset/3,
-                     first_index/3,
-                     bitset_is_set/2,
-                     bitset_set/4]).
-:- use_module(bitset_grid_util, [next_absolute_position/4]).
 :- use_module(library(lists), [append/3]).
+:- use_module(bitset_grid_util, [next_absolute_position/4]).
+:- use_module(util, [read_file_to_chars/2, goal_bitset/3, first_index/3, bitset_is_set/2, bitset_set/4]).
 
 :- set_prolog_flag(double_quotes, chars).
 :- set_prolog_flag(back_quotes, string).
