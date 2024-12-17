@@ -63,57 +63,37 @@ parse_file(Input, Walls, Size, StartPosition, EndPosition) :-
 
 config_walls(config(Walls, _, _, _), Walls).
 config_size(config(_, Size, _, _), Size).
-config_start_position(config(_, _, StartPosition, _), StartPosition).
+% config_start_position(config(_, _, StartPosition, _), StartPosition).
 config_end_position(config(_, _, _, EndPosition), EndPosition).
 
-state_visited_nodes(state(VisitedNodes, _, _, _), VisitedNodes).
+% state_visited_nodes(state(VisitedNodes, _, _, _), VisitedNodes).
 state_position(state(_, Position, _, _), Position).
-state_direction(state(_, _, Direction, _), Direction).
-state_cost(state(_, _, _, Cost), Cost).
+% state_direction(state(_, _, Direction, _), Direction).
+% state_cost(state(_, _, _, Cost), Cost).
 
-dead_end(Width-Height, Walls, Position) :-
-    absolute_position(Width-Height, Position),
-    label([Position]),
-    \+ bitset_is_set(Walls, Position),
-    next_absolute_position(Width, left, Position, LeftPosition),
-    next_absolute_position(Width, right, Position, RightPosition),
-    next_absolute_position(Width, up, Position, UpPosition),
-    next_absolute_position(Width, down, Position, DownPosition),
-    Mask #= (1 << LeftPosition) \/ (1 << RightPosition) \/ (1 << UpPosition) \/ (1 << DownPosition),
-    NumWalls #= popcount(Walls /\ Mask),
-    NumWalls #= 3.
+%!   best_total_cost(Cost)
+:- dynamic(best_total_cost/1).
 
-:- table(eliminate_dead_ends/5).
-
-% This is a little optimization -- fill in all dead ends with walls, and then recursively fill them in until there are
-% no more to fill.
-eliminate_dead_ends(Size, StartPosition, EndPosition, Walls0, Walls) :-
-    writeln(`Eliminating dead ends...`),
-    findall(Position,
-            (dead_end(Size, Walls0, Position), Position #\= StartPosition, Position #\= EndPosition),
-            DeadEnds),
-    (
-        DeadEnds = []
-    ->  % no dead ends, we're done
-        Walls = Walls0
-    ;   % otherwise fill in the dead ends with walls and recurse.
-        foldl([Position, WallsIn, WallsOut]>>bitset_set(WallsIn, Position, 1, WallsOut),
-              DeadEnds,
-              Walls0,
-              Walls1),
-        eliminate_dead_ends(Size, StartPosition, EndPosition, Walls1, Walls)
-    ).
+is_best_total_cost(Cost) :-
+    best_total_cost(PreviousBest)
+->  Cost #< PreviousBest
+;   true.
 
 %!   best_cost(Position, Direction, Cost)
 :- dynamic(best_cost/3).
 
+is_best_cost_from_position(Position, Direction, Cost) :-
+    best_cost(Position, Direction, PreviousBestCost)
+->  Cost #< PreviousBestCost
+;   true.
+
 init(Input, config(Walls, Size, StartPosition, EndPosition), state(VisitedNodes, Position, Direction, Cost)) :-
-    parse_file(Input, Walls0, Size, StartPosition, EndPosition),
-    eliminate_dead_ends(Size, StartPosition, EndPosition, Walls0, Walls),
+    parse_file(Input, Walls, Size, StartPosition, EndPosition),
     bitset_set(0, StartPosition, 1, VisitedNodes),
     Position = StartPosition,
     Direction = right,
     Cost = 0,
+    retractall(best_total_cost(_)),
     retractall(best_cost(_, _, _)).
 
 at_end(Config, State) :- config_end_position(Config, P), state_position(State, P).
@@ -137,13 +117,9 @@ cannot_turn(config(Walls, Width-_, _, _), state(VisitedNodes, Position, Directio
     ;   bitset_is_set(VisitedNodes, RHSPosition)
     ).
 
-is_best_known_cost(Position, Direction, Cost) :-
-    best_cost(Position, Direction, PreviousBestCost)
-->  Cost #< PreviousBestCost
-;   true.
-
-check_best_cost(Position, Direction, Cost) :-
-    is_best_known_cost(Position, Direction, Cost),
+check_best_costs(Position, Direction, Cost) :-
+    is_best_total_cost(Cost),
+    is_best_cost_from_position(Position, Direction, Cost),
     retractall(best_cost(Position, Direction, _)),
     assertz(best_cost(Position, Direction, Cost)).
 
@@ -152,7 +128,7 @@ move_forward(Config, State, State) :- at_end(Config, State), !.
 move_forward(Config, StartState, EndState) :-
     state(VisitedNodes, Position, Direction, Cost) = StartState,
     % make sure this is the best cost we've seen so far for this position thus far
-    check_best_cost(Position, Direction, Cost),
+    check_best_costs(Position, Direction, Cost),
     % calculate the next position
     config_size(Config, Width-_),
     next_absolute_position(Width, Direction, Position, NextPosition),
@@ -172,7 +148,7 @@ move_forward(Config, StartState, EndState) :-
     ;   move_forward_or_turn(Config, NextState, EndState)
     ).
 
-%! next_direction(TurnDirection, StartDirection, EndDirection) is undefined.
+%! turn(TurnDirection, StartDirection, EndDirection)
 turn(left,  up,    left).
 turn(left,  left,  down).
 turn(left,  down,  right).
@@ -187,34 +163,16 @@ turn(TurnDirection, Config, state(VisitedNodes, Position, Direction, Cost), EndS
     NextCost #= Cost + 1000,
     move_forward(Config, state(VisitedNodes, Position, NextDirection, NextCost), EndState).
 
-best_state(State1, State2, BestState) :-
-    state_cost(State1, Cost1),
-    state_cost(State2, Cost2),
-    (
-        Cost1 #< Cost2
-    ->  BestState = State1
-    ;   BestState = State2
-    ).
+% solve1(Input, EndState) :- init(Input, Config, StartState), !, move_forward_or_turn(Config, StartState, EndState).
 
-solve1(Input, EndState) :- init(Input, Config, StartState), !, move_forward_or_turn(Config, StartState, EndState).
-
-:- dynamic(saved_best_state/1).
-
-is_best_state(State) :-
-    saved_best_state(PreviousBest)
-->  best_state(PreviousBest, State, State)
-;   true.
-
-update_best_state(State) :-
-    is_best_state(EndState)
-->  retractall(saved_best_state(_)),
-    assertz(saved_best_state(EndState))
+update_best_cost(Cost) :-
+    is_best_total_cost(Cost)
+->  retractall(best_total_cost(_)),
+    assertz(best_total_cost(Cost))
 ;   true.
 
 solve(Config, StartState, BestCost) :-
-    retractall(saved_best_state(_)),
-    forall(move_forward_or_turn(Config, StartState, EndState), update_best_state(EndState)),
-    saved_best_state(BestState),
-    state_cost(BestState, BestCost).
+    forall(move_forward_or_turn(Config, StartState, state(_, _, _, Cost)), update_best_cost(Cost)),
+    best_total_cost(BestCost).
 
 solve(Input, BestCost) :- init(Input, Config, StartState), solve(Config, StartState, BestCost), !.
