@@ -6,7 +6,8 @@
 
 :- use_module(bitset_grid_util, [absolute_position/2,
                                  next_absolute_position/4,
-                                 xy_absolute_position/3]).
+                                 xy_absolute_position/3,
+                                 grid_forall_positions/3]).
 :- use_module(util, [read_file_to_chars/2,
                      bitset_set/4,
                      bitset_is_set/2,
@@ -158,15 +159,10 @@ print_position(Walls, Packages, RobotPosition, AbsolutePosition) :-
 ->  write('@')
 ;   write('.').
 
-print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition) :-
-    (
-        AbsolutePosition mod Width #= 0
-    ->  nl
-    ;   true
-    ),
-    print_position(Walls, Packages, RobotPosition, AbsolutePosition).
-
 print_room(Width-Height, Walls, Packages, RobotPosition) :-
-    forall((absolute_position(Width-Height, AbsolutePosition), label([AbsolutePosition])),
-           print_position(Width, Walls, Packages, RobotPosition, AbsolutePosition)),
-    nl.
+    grid_forall_positions(Width-Height,
+                          call(print_position(Walls, Packages, RobotPosition)),
+                          [_Position]>>nl
+                         ).
+
+% input(example, Width, Walls, Packages, RobotPosition, _Directions), print_room(Width-10, Walls, Packages, RobotPosition).

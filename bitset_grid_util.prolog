@@ -52,3 +52,28 @@ xy_position(Width-Height, X-Y) :-
 absolute_position(Width-Height, AbsolutePosition) :-
     MaxPosition #= (Width * Height) - 1,
     AbsolutePosition in 0..MaxPosition.
+
+%!  grid_forall_positions(Size, Goal) is det.
+%
+%   Call Goal(AbsolutePosition) for every position in a grid of Size.
+grid_forall_positions(Size, Goal) :-
+    forall((
+               absolute_position(Size, AbsolutePosition),
+               label([AbsolutePosition])
+           ),
+           call(Goal, AbsolutePosition)).
+
+%!  grid_forall_positions(Size, EachPositionGoal, EachLineGoal) is det.
+%
+%   Call EachPositionGoal(AbsolutePosition) for every position in a grid of Size. If position is the first position in a
+%   line, call EachLineGoal(Position) as well.
+grid_forall_positions_goal(Width, EachPositionGoal, EachLineGoal, Position) :-
+    (
+        Position mod Width #= 0
+    ->  call(EachLineGoal, Position)
+    ;   true
+    ),
+    call(EachPositionGoal, Position).
+
+grid_forall_positions(Width-Height, EachPositionGoal, EachLineGoal) :-
+    grid_forall_positions(Width-Height, call(grid_forall_positions_goal(Width, EachPositionGoal, EachLineGoal))).
