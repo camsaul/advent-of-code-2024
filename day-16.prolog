@@ -5,23 +5,19 @@
                      first_index/3,
                      bitset_is_set/2,
                      bitset_set/4]).
-:- use_module(bitset_grid_util, [absolute_position/2,
-                                 next_absolute_position/4,
-                                 xy_absolute_position/3]).
+:- use_module(bitset_grid_util, [next_absolute_position/4]).
 :- use_module(library(lists), [append/3]).
-:- use_module(library(apply), [foldl/4]).
-:- use_module(library(yall), [(>>)/5]).
 
 :- set_prolog_flag(double_quotes, chars).
 :- set_prolog_flag(back_quotes, string).
 :- set_prolog_flag(occurs_check, error).
 
-path(example, `day-16-example.txt`).
-path(actual, `day-16.txt`).
-
 %
 % File parsing code
 %
+
+path(example, `day-16-example.txt`).
+path(actual, `day-16.txt`).
 
 read_file(Input, Chars) :-
     path(Input, Path),
@@ -63,15 +59,10 @@ parse_file(Input, Walls, Size, StartPosition, EndPosition) :-
 
 config_walls(config(Walls, _, _, _), Walls).
 config_size(config(_, Size, _, _), Size).
-% config_start_position(config(_, _, StartPosition, _), StartPosition).
 config_end_position(config(_, _, _, EndPosition), EndPosition).
 
-% state_visited_nodes(state(VisitedNodes, _, _, _), VisitedNodes).
 state_position(state(_, Position, _, _), Position).
-% state_direction(state(_, _, Direction, _), Direction).
-% state_cost(state(_, _, _, Cost), Cost).
 
-%!   best_total_cost(Cost)
 :- dynamic(best_total_cost/1).
 
 is_best_total_cost(Cost) :-
@@ -79,7 +70,6 @@ is_best_total_cost(Cost) :-
 ->  Cost #< PreviousBest
 ;   true.
 
-%!   best_cost(Position, Direction, Cost)
 :- dynamic(best_cost/3).
 
 is_best_cost_from_position(Position, Direction, Cost) :-
@@ -148,7 +138,6 @@ move_forward(Config, StartState, EndState) :-
     ;   move_forward_or_turn(Config, NextState, EndState)
     ).
 
-%! turn(TurnDirection, StartDirection, EndDirection)
 turn(left,  up,    left).
 turn(left,  left,  down).
 turn(left,  down,  right).
@@ -162,8 +151,6 @@ turn(TurnDirection, Config, state(VisitedNodes, Position, Direction, Cost), EndS
     turn(TurnDirection, Direction, NextDirection),
     NextCost #= Cost + 1000,
     move_forward(Config, state(VisitedNodes, Position, NextDirection, NextCost), EndState).
-
-% solve1(Input, EndState) :- init(Input, Config, StartState), !, move_forward_or_turn(Config, StartState, EndState).
 
 update_best_cost(Cost) :-
     is_best_total_cost(Cost)
