@@ -9,7 +9,9 @@
                                  xy_absolute_position/3]).
 :- use_module(util, [read_file_to_chars/2,
                      bitset_set/4,
-                     bitset_is_set/2]).
+                     bitset_is_set/2,
+                     goal_bitset/3,
+                     first_index/3]).
 
 :- set_prolog_flag(double_quotes, chars).
 
@@ -70,53 +72,25 @@ move(Width, Directions, Walls, Packages0, RobotPosition0, Packages, RobotPositio
           Packages0-RobotPosition0,
           Packages-RobotPosition).
 
-parse_walls([], _AbsolutePosition, Walls, Walls).
-
-parse_walls(['#'|More], AbsolutePosition, Walls0, Walls) :-
-    bitset_set(Walls0, AbsolutePosition, 1, Walls1),
-    NextPosition #= AbsolutePosition + 1,
-    parse_walls(More, NextPosition, Walls1, Walls).
-
-parse_walls([Char|More], AbsolutePosition, Walls0, Walls) :-
-    Char \= '#',
-    NextPosition #= AbsolutePosition + 1,
-    parse_walls(More, NextPosition, Walls0, Walls).
-
-parse_packages([], _AbsolutePosition, Packages, Packages).
-
-parse_packages(['['|More], AbsolutePosition, Packages0, Packages) :-
-    bitset_set(Packages0, AbsolutePosition, 1, Packages1),
-    NextPosition #= AbsolutePosition + 1,
-    parse_packages(More, NextPosition, Packages1, Packages).
-
-parse_packages([Char|More], AbsolutePosition, Packages0, Packages) :-
-    Char \= '[',
-    NextPosition #= AbsolutePosition + 1,
-    parse_packages(More, NextPosition, Packages0, Packages).
-
-robot_position([], Position, Position) :- fail.
-
-robot_position(['@'|_], Position, Position).
-
-robot_position([Char|More], Position0, Position) :-
-    Char \= '@',
-    NextPosition #= Position0 + 1,
-    robot_position(More, NextPosition, Position).
-
 parse_input(Input, Walls, Packages, RobotPosition) :-
-    parse_walls(Input, 0, 0, Walls),
-    parse_packages(Input, 0, 0, Packages),
-    robot_position(Input, 0, RobotPosition).
+    goal_bitset(call(=(wall)), Input, Walls),
+    goal_bitset(call(=(package_left)), Input, Packages),
+    first_index(Input, call(=(robot)), RobotPosition).
 
-grid_character(#).
-grid_character(.).
-grid_character('O').
-grid_character(@).
+char_entity(#, wall).
+char_entity(., empty).
+char_entity('O', package).
+char_entity(@, robot).
 
-grid_character(X) --> [X], { grid_character(X) }.
+transform_entity(wall,    [wall, wall]).
+transform_entity(package, [package_left, package_right]).
+transform_entity(empty,   [empty, empty]).
+transform_entity(robot,   [robot, empty]).
+
+grid_character(Out) --> [X], { char_entity(X, Entity), transform_entity(Entity, Out) }.
 
 grid_characters([]) --> [].
-grid_characters([X|More]) --> grid_character(X), grid_characters(More).
+grid_characters([X,Y|More]) --> grid_character([X,Y]), grid_characters(More).
 
 grid([], 0-0) --> [].
 grid(Grid, Width-Height) -->
@@ -144,20 +118,9 @@ read_file(Path, Width, RoomInput, Directions) :-
 path(example, 'day-15-example.txt').
 path(actual, 'day-15.txt').
 
-transform_input('#', "##").
-transform_input('O', "[]").
-transform_input('.', "..").
-transform_input('@', "@.").
-
-expand_room([], []).
-
-expand_room([Char|MoreIn], [X, Y | MoreOut]) :- transform_input(Char, [X, Y]), expand_room(MoreIn, MoreOut).
-
 input(Input, Width, Walls, Packages, RobotPosition, Directions) :-
     path(Input, Path),
-    read_file(Path, Width0, RoomInput0, Directions),
-    expand_room(RoomInput0, RoomInput),
-    Width #= Width0 * 2,
+    read_file(Path, Width, RoomInput, Directions),
     parse_input(RoomInput, Walls, Packages, RobotPosition).
 
 package_gps_coodinate(Width, AbsolutePosition, Coordinate) :-

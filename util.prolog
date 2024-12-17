@@ -7,7 +7,6 @@
                  read_file_lines_to_chars/5,
                  replace_nth/4,
                  indexed/2,
-                 first_index/3,
                  last_index/3,
                  mapcat/3,
                  mean/2,
@@ -15,7 +14,9 @@
                  bitset_set/4,
                  bitset_is_set/2,
                  bitset_chars/2,
-                 bitset_string/2]).
+                 bitset_string/2,
+                 goal_bitset/3,
+                 first_index/3]).
 
 :- use_module(library(aggregate), [aggregate_all/3]).
 :- use_module(library(apply), [maplist/3, foldl/4]).
@@ -116,18 +117,6 @@ indexed([], _I, []).
 indexed([X | More], I, [I-X | MoreIndexed]) :- NextI #= I + 1, indexed(More, NextI, MoreIndexed).
 
 indexed(List, Out) :- indexed(List, 0, Out).
-
-%!  first_index(List, Pred, I) is undefined.
-%
-%   You can use CLP(FD) constraints on I to skip values from consideration as an optimization.
-first_index([H|T], Pred, I) :-
-    (
-        I #= 0,
-        call(Pred, H)
-    )
-->  true
-;   I #= NextI + 1,
-    first_index(T, Pred, NextI).
 
 % first_index([a, a, b, c, b, c, d, b, e], [X]>>(X = 'b'), I).
 % I = 2
@@ -276,3 +265,45 @@ bitset_chars(BitSet, Chars) :-
 %
 %   String is a list of characters representing BitSet, e.g. "0b110".
 bitset_string(BitSet, String) :- bitset_chars(BitSet, Chars), string_chars(String, Chars).
+
+%!  goal_bitset(Goal, ++List, -BitSet) is det.
+%
+%   BitSet is an integer whose bits are set to 1 for the indecies of items in List that satisfy Goal(Item).
+
+goal_bitset(_Goal, [], _Position, BitSet, BitSet).
+
+goal_bitset(Goal, [X|More], Position, BitSet0, BitSet) :-
+    (
+        call(Goal, X)
+    ->  bitset_set(BitSet0, Position, 1, BitSet1)
+    ;   BitSet1 = BitSet0
+    ),
+    NextPosition #= Position + 1,
+    goal_bitset(Goal, More, NextPosition, BitSet1, BitSet).
+
+goal_bitset(List, Goal, BitSet) :- goal_bitset(List, Goal, 0, 0, BitSet).
+
+%!  first_index(++List, Goal, Index) is semidet.
+%
+%   Index is the index of the first item in List that satisfies Goal(Item).
+%
+%   You can use CLP(FD) constraints on Index to skip values from consideration as an optimization.
+%
+%   ?- first_index([a, a, b, c, b, c, d, b, e], call(=(b)), I).
+%   I = 2.
+%
+%   ?- I #> 2, first_index([a, a, b, c, b, c, d, b, e], call(=(b)), I).
+%   I = 4.
+
+first_index([], _Goal, _Index0, _Index) :- fail.
+
+first_index([X|More], Goal, Index0, Index) :-
+    (
+        Index #= Index0,
+        call(Goal, X)
+    )
+->  true
+;   NextIndex #= Index0 + 1,
+    first_index(More, Goal, NextIndex, Index).
+
+first_index(List, Goal, Index) :- first_index(List, Goal, 0, Index).
