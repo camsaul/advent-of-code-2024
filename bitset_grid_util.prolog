@@ -2,11 +2,13 @@
                              next_absolute_position/4,
                              next_xy_position/4,
                              xy_position/2,
-                             absolute_position/2]).
+                             absolute_position/2,
+                             grid_forall_positions/2,
+                             grid_forall_positions/3]).
 
 :- use_module(library(clpfd)).
 
-%!  absolute_position(Width, X-Y, AbsolutePosition) is semidet.
+%!  xy_absolute_position(Width, XYPosition, AbsolutePosition) is semidet.
 %
 %   AbsolutePosition is the absolute index of coordinate X-Y in a grid of Width, e.g. if Width = 5 then
 %   AbsolutePosition = 9 translates to X = 4, Y = 1.
@@ -19,10 +21,10 @@ xy_absolute_position(Width, X-Y, AbsolutePosition) :-
 %!  next_absolute_position(Width, Direction, Position, NextPosition) is semidet.
 %
 %   NextPosition is the position next to Position in Direction.
-next_absolute_position(Width,  up,    Position, NextPosition) :- NextPosition #= Position - Width.
-next_absolute_position(Width,  down,  Position, NextPosition) :- NextPosition #= Position + Width.
-next_absolute_position(_Width, left,  Position, NextPosition) :- NextPosition #= Position - 1.
-next_absolute_position(_Width, right, Position, NextPosition) :- NextPosition #= Position + 1.
+next_absolute_position(Width,  up,    Position, NextPosition) :- NextPosition is Position - Width.
+next_absolute_position(Width,  down,  Position, NextPosition) :- NextPosition is Position + Width.
+next_absolute_position(_Width, left,  Position, NextPosition) :- NextPosition is Position - 1.
+next_absolute_position(_Width, right, Position, NextPosition) :- NextPosition is Position + 1.
 
 %!  next_xy_position(++Width, ++Direction, ++XYPosition, -NextXYPosition) is semidet.
 %!  next_xy_position(++Width, ++Direction, -XYPosition, ++NextXYPosition) is semidet.
@@ -37,16 +39,16 @@ next_xy_position(Width, Direction, XYPosition, NextXYPosition) :-
     next_absolute_position(Width, Direction, AbsolutePosition, NextAbsolutePosition),
     xy_absolute_position(Width, NextXYPosition, NextAbsolutePosition).
 
-%!  position(Width-Height, X-Y) is nondet.
+%!  xy_position(Size, XYPosition) is nondet.
 %
-%   X-Y is a position within a grid of size Width x Height.
+%   XYPosition is a position within a grid of Size..
 xy_position(Width-Height, X-Y) :-
     MaxX #= Width - 1,
     MaxY #= Height - 1,
     X in 0..MaxX,
     Y in 0..MaxY.
 
-%!  absolute_position(Width-Height, AbsolutePosition) is nondet.
+%!  absolute_position(Size, AbsolutePosition) is nondet.
 %
 %   AbsolutePosition is an absolute position in a grid of size Width x Height.
 absolute_position(Width-Height, AbsolutePosition) :-
