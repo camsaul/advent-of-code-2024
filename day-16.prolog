@@ -5,7 +5,6 @@
 
 :- set_prolog_flag(double_quotes, chars).
 :- set_prolog_flag(back_quotes, string).
-:- set_prolog_flag(occurs_check, error).
 
 %
 % File parsing code
@@ -72,12 +71,9 @@ is_best_cost_from_position(Position, Direction, Cost) :-
 ->  Cost #< PreviousBestCost
 ;   true.
 
-init(Input, config(Walls, Size, StartPosition, EndPosition), state(VisitedNodes, Position, Direction, Cost)) :-
+init(Input, config(Walls, Size, StartPosition, EndPosition), state(VisitedNodes, StartPosition, right, 0)) :-
     parse_file(Input, Walls, Size, StartPosition, EndPosition),
     bitset_set(0, StartPosition, 1, VisitedNodes),
-    Position = StartPosition,
-    Direction = right,
-    Cost = 0,
     retractall(best_total_cost(_)),
     retractall(best_cost(_, _, _)).
 
