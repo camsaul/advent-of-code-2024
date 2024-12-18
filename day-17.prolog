@@ -134,5 +134,4 @@ run_2(Input, A) :-
           [],
           Vars0),
     labelable_vars(Vars0, Vars),
-    format('Vars = ~w~n', [Vars]),
     labeling([ffc, min(A)], Vars).
