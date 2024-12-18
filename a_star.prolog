@@ -9,13 +9,20 @@
 
 :- meta_predicate a_star(?, 2, ?, ?, ?).
 
-% node(XYPos, CostThusFar, EstimatedRemainingCost, Visited)
+% node(XYPos, CostThusFar, EstimatedRemainingCost, Path)
+%
+% XYPos is a pair of X-Y
+% Path is a list of X-Y pairs that have already been visited in reverse order.
+%
+% OpenSet is a assoc_list (AVL tree) of EstimatedRemainingCost-X-Y => Node for nodes that still need searching.
+% ClosedSet is a BitSet of the absolute positions that have already been searched.
 
 %!  a_star(Size, NeighborGoal, StartXYPosition, GoalXYPosition, Path) is nondet.
 %
-%   A* Search algorithm to find the best path from StartXYPosition to GoalXYPosition.
+%   A* Search algorithm to find the best path from StartXYPosition to GoalXYPosition in a grid of Size.
 %
-%   NeighborGoal(XYPosition, NextXYPosition) is called to find valid neighboring positions from a given position.
+%   NeighborGoal(XYPosition, NextXYPosition) is called to find valid neighboring positions from a given position; it
+%   should succeed once for each valid position.
 a_star(Size, NeighborGoal, StartXY, GoalXY, Path) :-
     estimated_cost_to_node(StartXY, GoalXY, EstimatedCost),
     empty_assoc(OpenSet0),
@@ -24,7 +31,7 @@ a_star(Size, NeighborGoal, StartXY, GoalXY, Path) :-
     closed_set_add_xy(Size, 0, StartXY, ClosedSet),
     search(Size, NeighborGoal, OpenSet, ClosedSet, GoalXY, Path).
 
-node_key(node(XY, CostThusFar, EstRemainingCost, _Visited), Key) :-
+node_key(node(XY, CostThusFar, EstRemainingCost, _Path), Key) :-
     TotalEstCost #= CostThusFar + EstRemainingCost,
     Key = [TotalEstCost, XY].
 
@@ -56,11 +63,11 @@ cost_to_neighbor(_XYPos, _NextXYPost, 1).
 
 :- meta_predicate all_neighbors(?, 2, ?, ?, ?, ?).
 
-all_neighbors(Size, NeighborGoal, ClosedSet, GoalXY, node(XY, CostThusFar, _, Visited), Neighbors) :-
-    findall(node(NextXY, NextCostThusFar, NextEstimatedRemainingCost, [NextXY|Visited]),
+all_neighbors(Size, NeighborGoal, ClosedSet, GoalXY, node(XY, CostThusFar, _, Path), Neighbors) :-
+    findall(node(NextXY, NextCostThusFar, NextEstimatedRemainingCost, [NextXY|Path]),
             (
                 call(NeighborGoal, XY, NextXY),
-                % \+ memberchk(NextXY, Visited),
+                % \+ memberchk(NextXY, Path),
                 \+ closed_set_xy_is_present(Size, ClosedSet, NextXY),
                 cost_to_neighbor(XY, NextXY, CostToNext),
                 NextCostThusFar #= CostThusFar + CostToNext,
@@ -68,16 +75,16 @@ all_neighbors(Size, NeighborGoal, ClosedSet, GoalXY, node(XY, CostThusFar, _, Vi
             ),
             Neighbors).
 
-search(Size, NeighborGoal, OpenSet, ClosedSet, GoalXY, Path) :-
+search(Size, NeighborGoal, OpenSet, ClosedSet, GoalXY, GoalPath) :-
     select_best_node(OpenSet, RestOpenSet, BestNode),
-    node(XY, _, _, Visited) = BestNode,
+    node(XY, _, _, Path) = BestNode,
     (
         XY = GoalXY
-    ->  reverse(Visited, Path)
+    ->  reverse(Path, GoalPath)
     ;   all_neighbors(Size, NeighborGoal, ClosedSet, GoalXY, BestNode, Neighbors),
         open_set_add_nodes(RestOpenSet, Neighbors, NewOpenSet),
         closed_set_add_xy(Size, ClosedSet, XY, NewClosedSet),
-        search(Size, NeighborGoal, NewOpenSet, NewClosedSet, GoalXY, Path)
+        search(Size, NeighborGoal, NewOpenSet, NewClosedSet, GoalXY, GoalPath)
     ).
 
 select_best_node(Tree, RestTree, BestNode) :- del_min_assoc(Tree, _Key, BestNode, RestTree).
