@@ -16,7 +16,8 @@
                  bitset_chars/2,
                  bitset_string/2,
                  goal_bitset/3,
-                 first_index/3]).
+                 first_index/3,
+                 predmin/4]).
 
 :- use_module(library(aggregate), [aggregate_all/3]).
 :- use_module(library(apply), [maplist/3, foldl/4]).
@@ -283,6 +284,9 @@ goal_bitset(Goal, [X|More], Position, BitSet0, BitSet) :-
 
 goal_bitset(List, Goal, BitSet) :- goal_bitset(List, Goal, 0, 0, BitSet).
 
+:- meta_predicate first_index(?, 2, ?).
+:- meta_predicate first_index(?, 2, ?, ?).
+
 %!  first_index(++List, Goal, Index) is semidet.
 %
 %   Index is the index of the first item in List that satisfies Goal(Item).
@@ -307,3 +311,27 @@ first_index([X|More], Goal, Index0, Index) :-
     first_index(More, Goal, NextIndex, Index).
 
 first_index(List, Goal, Index) :- first_index(List, Goal, 0, Index).
+
+
+:- meta_predicate predmin(3, ?, ?, ?).
+:- meta_predicate predmin(3, ?, ?, ?, ?, ?).
+
+%! predmin(+Pred, +List, -Others, -Min) is semidet.
+%
+%  Fails if List is empty.
+%
+%  Returns the Min item in the list using Pred as well as the Others that are not the Min.
+%
+%  Pred is the same as with predsort, e.g. Pred(-Delta, +E1, +E2)
+predmin(Pred, [X|More], Others, Min) :- predmin(Pred, More, [], Others, X, Min).
+
+%! predmin(+Pred, +List, +CurrentOthers, -Others, +CurrentMin, -Min) is det.
+predmin(_Pred, [], Others, Others, Min, Min).
+
+predmin(Pred, [X|More], Others0, Others, Min0, Min) :-
+    call(Pred, Delta, X, Min0),
+    (
+        Delta = <
+    ->  predmin(Pred, More, [Min0|Others0], Others, X, Min)
+    ;   predmin(Pred, More, [X|Others0], Others, Min0, Min)
+    ).

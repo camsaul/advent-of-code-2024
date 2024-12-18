@@ -1,6 +1,7 @@
 :- module(bitset_grid_util, [xy_absolute_position/3,
                              next_absolute_position/4,
-                             next_xy_position/4,
+                             next_abs_position/4,
+                             next_xy_position/3,
                              xy_position/2,
                              absolute_position/2,
                              grid_forall_positions/2,
@@ -8,36 +9,45 @@
 
 :- use_module(library(clpfd)).
 
-%!  xy_absolute_position(Width, XYPosition, AbsolutePosition) is semidet.
+%!  xy_absolute_position(++Width, ++XYPosition, -AbsolutePosition) is semidet.
+%!  xy_absolute_position(++Width, -XYPosition, ++AbsolutePosition) is semidet.
 %
 %   AbsolutePosition is the absolute index of coordinate X-Y in a grid of Width, e.g. if Width = 5 then
 %   AbsolutePosition = 9 translates to X = 4, Y = 1.
 xy_absolute_position(Width, X-Y, AbsolutePosition) :-
-    MaxX #= Width - 1,
-    X in 0..MaxX,
-    Y #>= 0,
+    Y #= AbsolutePosition // Width,
+    X #= AbsolutePosition mod Width,
     AbsolutePosition #= X + (Y * Width).
 
-%!  next_absolute_position(Width, Direction, Position, NextPosition) is semidet.
+%!  next_absolute_position(Width, Direction, Position, NextXYPosition) is semidet.
 %
-%   NextPosition is the position next to Position in Direction.
-next_absolute_position(Width,  up,    Position, NextPosition) :- NextPosition is Position - Width.
-next_absolute_position(Width,  down,  Position, NextPosition) :- NextPosition is Position + Width.
-next_absolute_position(_Width, left,  Position, NextPosition) :- NextPosition is Position - 1.
-next_absolute_position(_Width, right, Position, NextPosition) :- NextPosition is Position + 1.
+%   NextXYPosition is the position next to Position in Direction.
+next_absolute_position(Width,  up,    Position, NextXYPosition) :- NextXYPosition #= Position - Width.
+next_absolute_position(Width,  down,  Position, NextXYPosition) :- NextXYPosition #= Position + Width.
+next_absolute_position(_Width, left,  Position, NextXYPosition) :- NextXYPosition #= Position - 1.
+next_absolute_position(_Width, right, Position, NextXYPosition) :- NextXYPosition #= Position + 1.
 
-%!  next_xy_position(++Width, ++Direction, ++XYPosition, -NextXYPosition) is semidet.
-%!  next_xy_position(++Width, ++Direction, -XYPosition, ++NextXYPosition) is semidet.
-%!  next_xy_position(++Width, -Direction, ++XYPosition, ++NextXYPosition) is semidet.
-%!  next_xy_position(++Width, -Direction, ++XYPosition, -NextXYPosition) is nondet.
-%!  next_xy_position(++Width, -Direction, --XYPosition, ++NextXYPosition) is nondet.
+%!  next_abs_position(Size, Direction, Position, NextXYPosition) is nondet.
 %
-%   NextXYPosition is the next X-Y position in Direction from XYPosition in a grid of Width.
+%   Same as next_absolute_position, but takes Size instead of Width and checks to make sure position is within the
+%   bounds of the grid.
+next_abs_position(Width-Height, Direction, Position, NextXYPosition) :-
+    next_absolute_position(Width, Direction, Position, NextXYPosition),
+    absolute_position(Width-Height, NextXYPosition).
 
-next_xy_position(Width, Direction, XYPosition, NextXYPosition) :-
-    xy_absolute_position(Width, XYPosition, AbsolutePosition),
-    next_absolute_position(Width, Direction, AbsolutePosition, NextAbsolutePosition),
-    xy_absolute_position(Width, NextXYPosition, NextAbsolutePosition).
+%!  next_xy_position(++Direction, ++XYPosition, -NextXYPosition) is semidet.
+%!  next_xy_position(++Direction, -XYPosition, ++NextXYPosition) is semidet.
+%!  next_xy_position(-Direction, ++XYPosition, ++NextXYPosition) is semidet.
+%!  next_xy_position(-Direction, ++XYPosition, -NextXYPosition) is nondet.
+%!  next_xy_position(-Direction, --XYPosition, ++NextXYPosition) is nondet.
+%
+%   NextXYPosition is the next X-Y position in Direction from XYPosition. Does not enforce that this position is a valid
+%   position on the grid (in case you want to wrap over)... use xy_position/2 to do that.
+
+next_xy_position(up,    X-Y0, X-Y) :- Y #= Y0 - 1.
+next_xy_position(down,  X-Y0, X-Y) :- Y #= Y0 + 1.
+next_xy_position(left,  X0-Y, X-Y) :- X #= X0 - 1.
+next_xy_position(right, X0-Y, X-Y) :- X #= X0 + 1.
 
 %!  xy_position(Size, XYPosition) is nondet.
 %
