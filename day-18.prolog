@@ -5,7 +5,7 @@
 
 :- use_module(bitset_grid_util, [xy_absolute_position/3, next_xy_position/3, xy_position/2]).
 :- use_module(util, [read_file_to_chars/2, bitset_is_set/2, bitset_set/4]).
-:- use_module(a_star, [a_star/4]).
+:- use_module(a_star, [a_star/5]).
 
 :- set_prolog_flag(double_quotes, chars).
 :- set_prolog_flag(back_quotes, string).
@@ -85,9 +85,7 @@ solve(Input, N) :-
     Size = Width-_,
     xy_absolute_position(Width, StartXY, StartPosition),
     xy_absolute_position(Width, EndXY, EndPosition),
-    format('StartXY = ~w~n', [StartXY]),
-    a_star(call(next_valid_xy_position(Size, Walls)), StartXY, EndXY, Path),
-    format('Path = ~w~n', [Path]),
+    a_star(Size, call(next_valid_xy_position(Size, Walls)), StartXY, EndXY, Path),
     length(Path, Length),
     % don't count the first node in the path.
     N #= Length - 1.
