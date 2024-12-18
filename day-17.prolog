@@ -16,9 +16,9 @@ opcode(5, out).
 opcode(6, bdv).
 opcode(7, cdv).
 
-register_name() --> "A".
-register_name() --> "B".
-register_name() --> "C".
+register_name --> "A".
+register_name --> "B".
+register_name --> "C".
 
 digit(Char) --> [Char], { char_type(Char, digit) }.
 
