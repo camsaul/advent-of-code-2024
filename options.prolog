@@ -12,3 +12,5 @@
 :- set_prolog_flag(re_compile, true).
 
 :- set_prolog_flag(occurs_check, error).
+
+% format(`~|~\`.t~d~3+`, [N]) % equivalent of %3d in sane languages
