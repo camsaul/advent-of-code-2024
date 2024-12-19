@@ -63,7 +63,7 @@ init_walls(Input, Walls) :-
     phrase(file(Coordinates), Chars),
     walls_bitset(Input, Coordinates, Walls).
 
-% :- table init/5.
+:- table init/5.
 
 init(Input, Walls, Size, StartPosition, EndPosition) :-
     init_walls(Input, Walls),
