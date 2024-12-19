@@ -1,5 +1,5 @@
 :- module(bitset_grid_util, [xy_absolute_position/3,
-                             next_absolute_position/4,
+                             unchecked_next_absolute_position/4,
                              next_abs_position/4,
                              next_xy_position/3,
                              xy_position/2,
@@ -15,25 +15,26 @@
 %   AbsolutePosition is the absolute index of coordinate X-Y in a grid of Width, e.g. if Width = 5 then
 %   AbsolutePosition = 9 translates to X = 4, Y = 1.
 xy_absolute_position(Width, X-Y, AbsolutePosition) :-
-    Y #= AbsolutePosition // Width,
     X #= AbsolutePosition mod Width,
+    Y #= AbsolutePosition // Width,
     AbsolutePosition #= X + (Y * Width).
 
 %!  next_absolute_position(Width, Direction, Position, NextXYPosition) is semidet.
 %
-%   NextXYPosition is the position next to Position in Direction.
-next_absolute_position(Width,  up,    Position, NextXYPosition) :- NextXYPosition #= Position - Width.
-next_absolute_position(Width,  down,  Position, NextXYPosition) :- NextXYPosition #= Position + Width.
-next_absolute_position(_Width, left,  Position, NextXYPosition) :- NextXYPosition #= Position - 1.
-next_absolute_position(_Width, right, Position, NextXYPosition) :- NextXYPosition #= Position + 1.
+%   NextXYPosition is the position next to Position in Direction. Does not check if this position is valid, so only use
+%   it on grids that have walls on the edges.
+unchecked_next_absolute_position(Width,  up,    Position, NextXYPosition) :- NextXYPosition #= Position - Width.
+unchecked_next_absolute_position(Width,  down,  Position, NextXYPosition) :- NextXYPosition #= Position + Width.
+unchecked_next_absolute_position(_Width, left,  Position, NextXYPosition) :- NextXYPosition #= Position - 1.
+unchecked_next_absolute_position(_Width, right, Position, NextXYPosition) :- NextXYPosition #= Position + 1.
 
-%!  next_abs_position(Size, Direction, Position, NextXYPosition) is nondet.
+%!  next_abs_position(Size, Direction, Position, NextPosition) is nondet.
 %
-%   Same as next_absolute_position, but takes Size instead of Width and checks to make sure position is within the
-%   bounds of the grid.
-next_abs_position(Width-Height, Direction, Position, NextXYPosition) :-
-    next_absolute_position(Width, Direction, Position, NextXYPosition),
-    absolute_position(Width-Height, NextXYPosition).
+%   This is checked (only returns valid positions in a given direction).
+next_abs_position(Width-_,      left,  P, NextP) :- P mod Width #> 0,         NextP #= P - 1.
+next_abs_position(Width-_,      right, P, NextP) :- P mod Width #< Width - 1, NextP #= P + 1.
+next_abs_position(Width-_,      up,    P, NextP) :- P // Width #> 0,          NextP #= P - Width.
+next_abs_position(Width-Height, down,  P, NextP) :- P // Width #< Height - 1, NextP #= P + Width.
 
 %!  next_xy_position(++Direction, ++XYPosition, -NextXYPosition) is semidet.
 %!  next_xy_position(++Direction, -XYPosition, ++NextXYPosition) is semidet.
@@ -65,6 +66,8 @@ absolute_position(Width-Height, AbsolutePosition) :-
     MaxPosition #= (Width * Height) - 1,
     AbsolutePosition in 0..MaxPosition.
 
+:- meta_predicate grid_forall_positions(?, 1).
+
 %!  grid_forall_positions(Size, Goal) is det.
 %
 %   Call Goal(AbsolutePosition) for every position in a grid of Size.
@@ -86,6 +89,8 @@ grid_forall_positions_goal(Width, EachPositionGoal, EachLineGoal, Position) :-
     ;   true
     ),
     call(EachPositionGoal, Position).
+
+:- meta_predicate grid_forall_positions(?, 1, 1).
 
 grid_forall_positions(Width-Height, EachPositionGoal, EachLineGoal) :-
     grid_forall_positions(Width-Height, call(grid_forall_positions_goal(Width, EachPositionGoal, EachLineGoal))).

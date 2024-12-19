@@ -4,8 +4,7 @@
 :- use_module(library(lists), [append/3]).
 :- use_module(library(yall)).
 
-:- use_module(bitset_grid_util, [absolute_position/2,
-                                 next_absolute_position/4,
+:- use_module(bitset_grid_util, [unchecked_next_absolute_position/4,
                                  xy_absolute_position/3,
                                  grid_forall_positions/3]).
 :- use_module(util, [read_file_to_chars/2,
@@ -20,9 +19,6 @@ char_direction(^, up).
 char_direction(v, down).
 char_direction(<, left).
 char_direction(>, right).
-
-next_position(Width, Direction, AbsolutePosition, NextAbsolutePosition) :-
-    next_absolute_position(Width, Direction, AbsolutePosition, NextAbsolutePosition).
 
 package_at_position(PackagePosition, Packages, left_half) :- bitset_is_set(Packages, PackagePosition).
 
@@ -41,8 +37,8 @@ move_package(Width, Direction, Walls, PackagePosition, Packages0, Packages) :-
     ;   LeftPosition #= PackagePosition - 1,
         RightPosition #= PackagePosition
     ),
-    next_position(Width, Direction, LeftPosition, NextLeftPosition),
-    next_position(Width, Direction, RightPosition, NextRightPosition),
+    unchecked_next_absolute_position(Width, Direction, LeftPosition, NextLeftPosition),
+    unchecked_next_absolute_position(Width, Direction, RightPosition, NextRightPosition),
     % check for walls
     \+ bitset_is_set(Walls, NextLeftPosition),
     \+ bitset_is_set(Walls, NextRightPosition),
@@ -55,7 +51,7 @@ move_package(Width, Direction, Walls, PackagePosition, Packages0, Packages) :-
     bitset_set(Packages3, NextLeftPosition, 1, Packages).
 
 move_robot(Width, Direction, Walls, Packages0, RobotPosition0, Packages, RobotPosition) :-
-    next_position(Width, Direction, RobotPosition0, RobotPosition1),
+    unchecked_next_absolute_position(Width, Direction, RobotPosition0, RobotPosition1),
     (
         (
             \+ bitset_is_set(Walls, RobotPosition1),

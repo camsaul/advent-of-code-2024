@@ -2,7 +2,7 @@
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/3]).
 :- use_module(library(yall)).
-:- use_module(bitset_grid_util, [next_absolute_position/4]).
+:- use_module(bitset_grid_util, [unchecked_next_absolute_position/4]).
 :- use_module(util, [read_file_to_chars/2, goal_bitset/3, first_index/3, bitset_is_set/2, bitset_set/4]).
 
 :- set_prolog_flag(double_quotes, chars).
@@ -90,13 +90,13 @@ move_forward_or_turn(Config, StartState, EndState) :-
 
 cannot_turn(config(Walls, Width-_, _, _), state(VisitedNodes, Position, Direction, _Cost)) :-
     turn(left, Direction, LHSDirection),
-    next_absolute_position(Width, LHSDirection, Position, LHSPosition),
+    unchecked_next_absolute_position(Width, LHSDirection, Position, LHSPosition),
     (
         bitset_is_set(Walls, LHSPosition), !
     ;   bitset_is_set(VisitedNodes, LHSPosition)
     ),
     turn(right, Direction, RHSDirection),
-    next_absolute_position(Width, RHSDirection, Position, RHSPosition),
+    unchecked_next_absolute_position(Width, RHSDirection, Position, RHSPosition),
     (
         bitset_is_set(Walls, RHSPosition), !
     ;   bitset_is_set(VisitedNodes, RHSPosition)
@@ -116,7 +116,7 @@ move_forward(Config, StartState, EndState) :-
     check_best_costs(Position, Direction, Cost),
     % calculate the next position
     config_size(Config, Width-_),
-    next_absolute_position(Width, Direction, Position, NextPosition),
+    unchecked_next_absolute_position(Width, Direction, Position, NextPosition),
     % make sure we haven't visted the next position before
     \+ bitset_is_set(VisitedNodes, NextPosition),
     % make sure the next position isn't a wall

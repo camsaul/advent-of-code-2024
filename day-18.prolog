@@ -1,11 +1,11 @@
-:- use_module(library(apply), [foldl/4]).
+:- use_module(library(apply), [foldl/4, maplist/3]).
 :- use_module(library(clpfd)).
 :- use_module(library(lists), [append/3]).
 :- use_module(library(yall)).
 
-:- use_module(bitset_grid_util, [xy_absolute_position/3, next_xy_position/3, xy_position/2]).
+:- use_module(bitset_grid_util, [xy_absolute_position/3, next_abs_position/4]).
 :- use_module(util, [read_file_to_chars/2, bitset_is_set/2, bitset_set/4]).
-:- use_module(a_star, [a_star/4]).
+:- use_module(a_star, [a_star/5]).
 
 :- set_prolog_flag(double_quotes, chars).
 :- set_prolog_flag(back_quotes, string).
@@ -63,6 +63,8 @@ init_walls(Input, Walls) :-
     phrase(file(Coordinates), Chars),
     walls_bitset(Input, Coordinates, Walls).
 
+% :- table init/5.
+
 init(Input, Walls, Size, StartPosition, EndPosition) :-
     init_walls(Input, Walls),
     size(Input, Size),
@@ -73,19 +75,16 @@ init(Input, Walls, Size, StartPosition, EndPosition) :-
 % solution
 %
 
-wall_at_xy_position(Width, Walls, XY) :- xy_absolute_position(Width, XY, Pos), bitset_is_set(Walls, Pos).
-
-next_valid_xy_position(Width-Height, Walls, XY, NextXY) :-
-    next_xy_position(_Direction, XY, NextXY),
-    xy_position(Width-Height, NextXY),
-    \+ wall_at_xy_position(Width, Walls, NextXY).
+next_valid_abs_position(Size, Walls, P, NextP) :- next_abs_position(Size, _Direction, P, NextP), \+ bitset_is_set(Walls, NextP).
 
 solve(Input, N) :-
     init(Input, Walls, Size, StartPosition, EndPosition),
-    Size = Width-_,
-    xy_absolute_position(Width, StartXY, StartPosition),
-    xy_absolute_position(Width, EndXY, EndPosition),
-    a_star(call(next_valid_xy_position(Size, Walls)), StartXY, EndXY, Path),
+    % format('Walls = 0b~2r~n', [Walls]),
+    a_star(Size, call(next_valid_abs_position(Size, Walls)), StartPosition, EndPosition, Path),
     length(Path, Length),
+    % format('Path = ~w~n', [Path]),
+    % Size = Width-_,
+    % maplist({Width}/[P, XY]>>xy_absolute_position(Width, XY, P), Path, Path1),
+    % format('Path1 = ~w~n', [Path1]),
     % don't count the first node in the path.
     N #= Length - 1.
