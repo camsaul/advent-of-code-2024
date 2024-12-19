@@ -25,7 +25,7 @@
 %   should succeed once for each valid position.
 a_star(Size, NeighborGoal, StartPos, GoalPos, Path) :-
     estimated_cost_to_node(Size, StartPos, GoalPos, EstimatedCost),
-    empty_assoc(OpenSet0),
+    empty_open_set(OpenSet0),
     StartNode = node(StartPos, 0, EstimatedCost, [StartPos]),
     open_set_add_node(OpenSet0, StartNode, OpenSet),
     empty_closed_set(ClosedSet0),
@@ -34,6 +34,8 @@ a_star(Size, NeighborGoal, StartPos, GoalPos, Path) :-
 
 node_key(node(P, CostThusFar, EstRemainingCost, _Path), [TotalEstCost, P]) :-
     TotalEstCost #= CostThusFar + EstRemainingCost.
+
+empty_open_set(OpenSet) :- empty_assoc(OpenSet).
 
 open_set_add_node(OpenSet0, Node, OpenSet1) :- node_key(Node, Key), put_assoc(Key, OpenSet0, Node, OpenSet1).
 
