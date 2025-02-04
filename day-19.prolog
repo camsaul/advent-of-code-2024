@@ -6,6 +6,8 @@
 :- set_prolog_flag(double_quotes, chars).
 :- set_prolog_flag(back_quotes, string).
 
+:- discontiguous(solve/4).
+
 % Each stripe can be white (w), blue (u), black (b), red (r), or green (g)
 
 stripe(w).
@@ -54,18 +56,47 @@ reduce_towel_possible(Patterns, Towel, N0, N) :-
     ->  N #= N0 + 1
     ;   N #= N0.
 
-solve(Patterns, Towels, NumPossible) :- foldl(call(reduce_towel_possible, Patterns), Towels, 0, NumPossible).
+solve(part1, Patterns, Towels, NumPossible) :- foldl(call(reduce_towel_possible, Patterns), Towels, 0, NumPossible).
 
-solve(Input, NumPossible) :- init(Input, Patterns, Towels), solve(Patterns, Towels, NumPossible).
+solve(Input, What, NumPossible) :- init(Input, Patterns, Towels), solve(What, Patterns, Towels, NumPossible).
 
 :- begin_tests(part_1).
 
 test(example) :-
-    solve(example, NumPossible),
+    solve(example, part1, NumPossible),
     assertion(NumPossible == 6).
 
 test(actual) :-
-    solve(actual, NumPossible),
+    solve(actual, part1, NumPossible),
     assertion(NumPossible == 300).
 
 :- end_tests(part_1).
+
+%
+% Part 2
+%
+
+towel_pattern(_Patterns, [], []).
+
+towel_pattern(Patterns, Towel, [TowelPattern|RestTowelPatterns]) :-
+    member(TowelPattern, Patterns),
+    append(TowelPattern, RestTowel, Towel),
+    towel_pattern(Patterns, RestTowel, RestTowelPatterns).
+
+num_possible_patterns(Patterns, Towel, NumPossiblePatterns) :-
+    findall(Out, towel_pattern(Patterns, Towel, Out), AllPatterns),
+    length(AllPatterns, NumPossiblePatterns).
+
+reduce_num_possible_patterns(Patterns, Towel, N0, N) :-
+    num_possible_patterns(Patterns, Towel, N1),
+    N #= N0 + N1.
+
+solve(part2, Patterns, Towels, NumPatterns) :- foldl(call(reduce_num_possible_patterns, Patterns), Towels, 0, NumPatterns).
+
+:- begin_tests(part_2).
+
+test(example) :-
+    solve(example, part2, NumPatterns),
+    assertion(NumPatterns == 16).
+
+:- end_tests(part_2).
