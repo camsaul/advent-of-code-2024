@@ -76,16 +76,19 @@ test(actual) :-
 % Part 2
 %
 
-towel_pattern(_Patterns, [], []).
+:- table(num_possible_patterns/3).
 
-towel_pattern(Patterns, Towel, [TowelPattern|RestTowelPatterns]) :-
-    member(TowelPattern, Patterns),
-    append(TowelPattern, RestTowel, Towel),
-    towel_pattern(Patterns, RestTowel, RestTowelPatterns).
+num_possible_patterns(_Patterns, [], 1).
 
-num_possible_patterns(Patterns, Towel, NumPossiblePatterns) :-
-    findall(Out, towel_pattern(Patterns, Towel, Out), AllPatterns),
-    length(AllPatterns, NumPossiblePatterns).
+num_possible_patterns(Patterns, Towel, NumPatterns) :-
+    findall(N,
+            (
+                member(TowelPattern, Patterns),
+                append(TowelPattern, RestTowel, Towel),
+                num_possible_patterns(Patterns, RestTowel, N)
+            ),
+            Ns),
+    foldl([X, Y, Out]>>(Out #= X + Y), Ns, 0, NumPatterns).
 
 reduce_num_possible_patterns(Patterns, Towel, N0, N) :-
     num_possible_patterns(Patterns, Towel, N1),
@@ -98,5 +101,9 @@ solve(part2, Patterns, Towels, NumPatterns) :- foldl(call(reduce_num_possible_pa
 test(example) :-
     solve(example, part2, NumPatterns),
     assertion(NumPatterns == 16).
+
+test(actual) :-
+    solve(actual, part2, NumPatterns),
+    assertion(NumPatterns == 624802218898092).
 
 :- end_tests(part_2).
