@@ -1,7 +1,7 @@
 :- use_module(library(apply), [foldl/4]).
 :- use_module(library(clpfd)).
-:- use_module(util, [read_file_to_chars/2]).
 :- use_module(library(lists), [member/2, append/3]).
+:- use_module(util, [read_file_to_chars/2]).
 
 :- set_prolog_flag(double_quotes, chars).
 :- set_prolog_flag(back_quotes, string).
@@ -88,7 +88,7 @@ num_possible_patterns(Patterns, Towel, NumPatterns) :-
                 num_possible_patterns(Patterns, RestTowel, N)
             ),
             Ns),
-    foldl([X, Y, Out]>>(Out #= X + Y), Ns, 0, NumPatterns).
+    foldl(plus, Ns, 0, NumPatterns).
 
 reduce_num_possible_patterns(Patterns, Towel, N0, N) :-
     num_possible_patterns(Patterns, Towel, N1),
